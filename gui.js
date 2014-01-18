@@ -1550,25 +1550,30 @@ IDE_Morph.prototype.droppedBinary = function (anArrayBuffer, name) {
         myself = this,
         suffix = name.substring(name.length - 3);
 
-    if (suffix.toLowerCase() !== 'ypr') {return; }
+    if (suffix.toLowerCase() == 'ypr') {
+        function loadYPR(buffer, lbl) {
+            var reader = new sb.Reader(),
+                pname = lbl.split('.')[0]; // up to period
+            reader.onload = function (info) {
+                myself.droppedText(new sb.XMLWriter().write(pname, info));
+            };
+            reader.readYPR(new Uint8Array(buffer));
+        }
 
-    function loadYPR(buffer, lbl) {
-        var reader = new sb.Reader(),
-            pname = lbl.split('.')[0]; // up to period
-        reader.onload = function (info) {
-            myself.droppedText(new sb.XMLWriter().write(pname, info));
-        };
-        reader.readYPR(new Uint8Array(buffer));
+        if (!ypr) {
+            ypr = document.createElement('script');
+            ypr.id = 'ypr';
+            ypr.onload = function () {loadYPR(anArrayBuffer, name); };
+            document.head.appendChild(ypr);
+            ypr.src = 'ypr.js';
+        } else {
+            loadYPR(anArrayBuffer, name);
+        }
     }
-
-    if (!ypr) {
-        ypr = document.createElement('script');
-        ypr.id = 'ypr';
-        ypr.onload = function () {loadYPR(anArrayBuffer, name); };
-        document.head.appendChild(ypr);
-        ypr.src = 'ypr.js';
-    } else {
-        loadYPR(anArrayBuffer, name);
+    
+    if(suffix.toLowerCase() == "zip") {
+        var z = new Zipper();
+        z.open(anArrayBuffer, {base64: false});
     }
 };
 
@@ -2627,11 +2632,11 @@ IDE_Morph.prototype.rawSaveProject = function (name) {
     var str;
     if (name) {
         this.setProjectName(name);
-        if (Process.prototype.isCatchingErrors) {
+        //if (Process.prototype.isCatchingErrors) {
+        if(true) {
             try {
-                localStorage['-snap-project-' + name]
-                    = str = this.serializer.serialize(this.stage);
-                location.hash = '#open:' + str;
+                var z = new Zipper();
+                z.save(this, name);
                 this.showMessage('Saved!', 1);
             } catch (err) {
                 this.showMessage('Save failed: ' + err);
@@ -2751,9 +2756,14 @@ IDE_Morph.prototype.rawOpenProjectString = function (str) {
     StageMorph.prototype.codeMappings = {};
     StageMorph.prototype.codeHeaders = {};
     StageMorph.prototype.enableCodeMapping = false;
-    if (Process.prototype.isCatchingErrors) {
+    //if (Process.prototype.isCatchingErrors) {
+    if(true) {
         try {
-            this.serializer.openProject(this.serializer.load(str), this);
+            var z = new Zipper();
+            z = z.open(str);
+            var stage = z.file("stage.xml").asText();
+            console.log(stage);
+            this.serializer.openProject(this.serializer.load(stage), this);
         } catch (err) {
             this.showMessage('Load failed: ' + err);
         }

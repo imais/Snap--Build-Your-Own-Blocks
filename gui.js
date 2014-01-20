@@ -2759,9 +2759,10 @@ IDE_Morph.prototype.rawOpenProjectString = function (str) {
     //if (Process.prototype.isCatchingErrors) {
     if(true) {
         try {
-            var z = new Zipper();
-            z = z.open(str);
-            var stage = z.file("stage.xml").asText();
+            //var z = new Zipper();
+            //z = z.open(str);
+            //var stage = z.file("stage.xml").asText();
+            var stage = str;
             console.log(stage);
             this.serializer.openProject(this.serializer.load(stage), this);
         } catch (err) {

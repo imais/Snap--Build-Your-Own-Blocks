@@ -4,15 +4,7 @@
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 		<title>C-Snap - Snap with culture</title>
     <link rel="shortcut icon" href="http://snap.berkeley.edu/fav3.gif" type="image/gif">
-    <script type="text/javascript">
-      var config = {
-        "modules": [],
-        "asset_path": "",
-        "urls": {
-          "demos_url": "/eglash/csdt/pcsdt/Snap/demo.xml",
-        }
-      };
-    </script>
+    <script type="text/javascript" src="config.js"></script>
         
         
     <script type="text/javascript" src="lib/jszip.js"></script>
@@ -40,17 +32,7 @@
                 <script type="text/javascript" src="Charles_Changes_To_IDE_Morph.js"></script>
 		<!-- End load modules -->
 		
-		<script type="text/javascript">
-			var world;
-			window.onload = function () {
-				world = new WorldMorph(document.getElementById('world'));
-				new IDE_Morph().openIn(world);
-				setInterval(loop, 1);
-			};
-			function loop() {
-				world.doOneCycle();
-			};
-		</script>
+		<script type="text/javascript" src="init.js"></script>
 	</head>
 	<body style="margin: 0;">
 		<canvas id="world" tabindex="1" style="position: absolute;" />

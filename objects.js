@@ -525,6 +525,11 @@ SpriteMorph.prototype.initBlocks = function () {
             category: 'pen',
             spec: 'stamp'
         },
+        doStampCube: {
+            type: 'command',
+            category: 'pen',
+            spec: 'stamp cube'
+        },
 
         // Control
         receiveGo: {
@@ -1182,6 +1187,7 @@ SpriteMorph.prototype.blockAlternatives = {
     setBrightness: ['changeBrightness', 'setHue', 'changeHue'],
     changeSize: ['setSize'],
     setSize: ['changeSize'],
+    doStampCube: ['doStampCube' ],
 
     // control:
     receiveGo: ['receiveClick'],
@@ -1708,6 +1714,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('setSize'));
         blocks.push('-');
         blocks.push(block('doStamp'));
+        blocks.push(block('doStampCube'));
 
     } else if (cat === 'control') {
 
@@ -2608,6 +2615,89 @@ SpriteMorph.prototype.doStamp = function () {
         this.startWarp();
     }
 };
+
+// SpriteMorph 3D experiment - stamping a rotating 3D cube
+SpriteMorph.prototype.rendering3d = false;
+SpriteMorph.prototype.scene;
+SpriteMorph.prototype.camera;
+SpriteMorph.prototype.renderer;
+SpriteMorph.prototype.cube;
+
+SpriteMorph.prototype.step = function () {
+	if (this.rendering3d) {
+		var stage = this.parent,
+		canvas = stage.penTrails(),
+		context = canvas.getContext('2d'),
+		isWarped = this.isWarped;
+		if (isWarped) {
+			this.endWarp();
+		}
+
+		this.cube.rotation.x += 0.02;
+		this.cube.rotation.y += 0.02;
+		this.renderer.render(this.scene, this.camera);
+
+		context.restore();
+		this.changed();
+		if (isWarped) {
+			this.startWarp();
+		}
+	}
+}
+
+
+SpriteMorph.prototype.doStampCube = function () {
+    var stage = this.parent,
+	canvas = stage.penTrails(),
+	context = canvas.getContext('2d'),
+	width = stage.image.width,
+	height = stage.image.height,
+    isWarped = this.isWarped;
+
+    if (isWarped) {
+        this.endWarp();
+    }
+    context.save();
+    context.scale(1 / stage.scale, 1 / stage.scale);
+
+	// BEGIN: three.js 
+	this.scene = new THREE.Scene();
+
+	// mesh
+	// var geometry = new THREE.BoxGeometry(1, 1, 1);
+	var geometry = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+	// var material = new THREE.MeshBasicMaterial({color: 0x00cc00});
+	var material = new THREE.MeshLambertMaterial({color: 0x00cc00});
+	this.cube = new THREE.Mesh(geometry, material);
+	this.scene.add(this.cube);
+
+	// camera
+	this.camera = new THREE.PerspectiveCamera(45, width/height, 0.1, 1000);
+	this.camera.position.z = 10;
+	this.scene.add(this.camera);
+
+	// create a point light
+	var pointLight = new THREE.PointLight( 0xFFFFFF );
+	pointLight.position.x = 10;
+	pointLight.position.y = 50;
+	pointLight.position.z = 130;
+	this.scene.add(pointLight);
+
+	// finally, render
+	this.renderer = new THREE.CanvasRenderer({canvas: canvas});
+	this.renderer.setSize(width, height);
+	this.renderer.render(this.scene, this.camera);
+
+	this.rendering3d = true;
+	// END  : three.js
+
+    context.restore();
+    this.changed();
+    if (isWarped) {
+        this.startWarp();
+    }
+};
+
 
 SpriteMorph.prototype.clear = function () {
     this.parent.clearPenTrails();

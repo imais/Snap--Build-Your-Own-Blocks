@@ -1450,7 +1450,13 @@ SpriteMorph.prototype.render3dObject = function (aCanvas, width, height) {
 	var geometry;
 	switch(this.costume.objectType3d) {
 	case "cylinder":
-		geometry = new THREE.CylinderGeometry(2, 2, 5, 32);
+		geometry = new THREE.CylinderGeometry(2, 2, 5, 16);
+		break;
+	case "cone":
+		geometry = new THREE.CylinderGeometry(0, 2, 5, 16);
+		break;
+	case "sphere":
+		geometry = new THREE.SphereGeometry(2, 16, 16);
 		break;
 	case "cube":
 	default:

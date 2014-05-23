@@ -1261,6 +1261,7 @@ SpriteMorph.prototype.init = function (globals) {
 
     this.isDraggable = true;
     this.isDown = false;
+	this.isRendering3d = false;
 
     this.heading = 90;
     this.changed();
@@ -1385,7 +1386,15 @@ SpriteMorph.prototype.drawNew = function () {
         ctx.scale(this.scale * stageScale, this.scale * stageScale);
         ctx.translate(shift.x, shift.y);
         ctx.rotate(radians(facing - 90));
-		ctx.drawImage(pic.contents, 0, 0);
+
+		if (this.costume.is3d) {
+			this.renderer3d = this.render3dObject(this.image, costumeExtent.x, costumeExtent.y );
+			this.isRendering3d = true;
+		}
+		else {
+			ctx.drawImage(pic.contents, 0, 0);
+			this.isRendering3d = false;
+		}
 
         // adjust my position to the rotation
         this.setCenter(currentCenter, true); // just me
@@ -1432,6 +1441,47 @@ SpriteMorph.prototype.drawNew = function () {
 		this.changeCostumeColor(this.costumeColor);
 	}
 };
+
+
+SpriteMorph.prototype.render3dObject = function (aCanvas, width, height) {
+	this.scene = new THREE.Scene();
+
+	// mesh
+	var geometry;
+	switch(this.costume.objectType3d) {
+	case "cylinder":
+		geometry = new THREE.CylinderGeometry(2, 2, 5, 32);
+		break;
+	case "cube":
+	default:
+		geometry = new THREE.BoxGeometry(3, 3, 3);
+		break;
+	}
+	var color = new THREE.Color(this.color.r/255, this.color.g/255, this.color.b/255);
+	var material = new THREE.MeshLambertMaterial({color: color});
+	this.object = new THREE.Mesh(geometry, material);
+	this.scene.add(this.object);
+
+	// camera
+	this.camera = new THREE.PerspectiveCamera(45, width/height, 0.1, 1000);
+	this.camera.position.z = 10;
+	this.scene.add(this.camera);
+
+	// create a point light
+	var pointLight = new THREE.PointLight( 0xFFFFFF );
+	pointLight.position.x = 10;
+	pointLight.position.y = 50;
+	pointLight.position.z = 130;
+	this.scene.add(pointLight);
+
+	// finally, render
+	var renderer = new THREE.CanvasRenderer({canvas: aCanvas});
+	renderer.setSize(width, height);
+	renderer.render(this.scene, this.camera);
+
+	return renderer;
+}
+
 
 SpriteMorph.prototype.endWarp = function () {
     this.isWarped = false;
@@ -2599,6 +2649,7 @@ SpriteMorph.prototype.doStamp = function () {
     var stage = this.parent,
         context = stage.penTrails().getContext('2d'),
         isWarped = this.isWarped;
+
     if (isWarped) {
         this.endWarp();
     }
@@ -2616,26 +2667,21 @@ SpriteMorph.prototype.doStamp = function () {
     }
 };
 
-// SpriteMorph 3D experiment - stamping a rotating 3D cube
-SpriteMorph.prototype.rendering3d = false;
-SpriteMorph.prototype.scene;
-SpriteMorph.prototype.camera;
-SpriteMorph.prototype.renderer;
-SpriteMorph.prototype.cube;
+// SpriteMorph 3D experiment
 
 SpriteMorph.prototype.step = function () {
-	if (this.rendering3d) {
-		var stage = this.parent,
-		canvas = stage.penTrails(),
+	if (this.isRendering3d) {
+		var canvas = this.image,
+		// canvas = stage.penTrails(),
 		context = canvas.getContext('2d'),
 		isWarped = this.isWarped;
 		if (isWarped) {
 			this.endWarp();
 		}
 
-		this.cube.rotation.x += 0.02;
-		this.cube.rotation.y += 0.02;
-		this.renderer.render(this.scene, this.camera);
+		this.object.rotation.x += 0.01;
+		this.object.rotation.y += 0.01;
+		this.renderer3d.render(this.scene, this.camera);
 
 		context.restore();
 		this.changed();
@@ -2659,37 +2705,39 @@ SpriteMorph.prototype.doStampCube = function () {
     }
     context.save();
     context.scale(1 / stage.scale, 1 / stage.scale);
+	
+	this.render3dObject( canvas, width, height );
 
-	// BEGIN: three.js 
-	this.scene = new THREE.Scene();
+	// // BEGIN: three.js 
+	// this.scene = new THREE.Scene();
 
-	// mesh
-	// var geometry = new THREE.BoxGeometry(1, 1, 1);
-	var geometry = new THREE.BoxGeometry(0.8, 0.8, 0.8);
-	// var material = new THREE.MeshBasicMaterial({color: 0x00cc00});
-	var material = new THREE.MeshLambertMaterial({color: 0x00cc00});
-	this.cube = new THREE.Mesh(geometry, material);
-	this.scene.add(this.cube);
+	// // mesh
+	// // var geometry = new THREE.BoxGeometry(1, 1, 1);
+	// var geometry = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+	// // var material = new THREE.MeshBasicMaterial({color: 0x00cc00});
+	// var material = new THREE.MeshLambertMaterial({color: 0x00cc00});
+	// this.cube = new THREE.Mesh(geometry, material);
+	// this.scene.add(this.cube);
 
-	// camera
-	this.camera = new THREE.PerspectiveCamera(45, width/height, 0.1, 1000);
-	this.camera.position.z = 10;
-	this.scene.add(this.camera);
+	// // camera
+	// this.camera = new THREE.PerspectiveCamera(45, width/height, 0.1, 1000);
+	// this.camera.position.z = 10;
+	// this.scene.add(this.camera);
 
-	// create a point light
-	var pointLight = new THREE.PointLight( 0xFFFFFF );
-	pointLight.position.x = 10;
-	pointLight.position.y = 50;
-	pointLight.position.z = 130;
-	this.scene.add(pointLight);
+	// // create a point light
+	// var pointLight = new THREE.PointLight( 0xFFFFFF );
+	// pointLight.position.x = 10;
+	// pointLight.position.y = 50;
+	// pointLight.position.z = 130;
+	// this.scene.add(pointLight);
 
-	// finally, render
-	this.renderer = new THREE.CanvasRenderer({canvas: canvas});
-	this.renderer.setSize(width, height);
-	this.renderer.render(this.scene, this.camera);
+	// // finally, render
+	// this.renderer = new THREE.CanvasRenderer({canvas: canvas});
+	// this.renderer.setSize(width, height);
+	// this.renderer.render(this.scene, this.camera);
 
-	this.rendering3d = true;
-	// END  : three.js
+	// this.rendering3d = true;
+	// // END  : three.js
 
     context.restore();
     this.changed();
@@ -5342,6 +5390,17 @@ function Costume(canvas, name, rotationCenter) {
     this.rotationCenter = rotationCenter || this.center();
     this.version = Date.now(); // for observer optimization
     this.loaded = null; // for de-serialization only
+
+	console.log( "Costume.name: ", this.name );
+
+	// 3D extension
+	if (this.name != null && (-1 < this.name.indexOf("3d") || -1 < this.name.indexOf("3D"))) {
+		this.is3d = true;
+		this.objectType3d = this.name.substr(this.name.indexOf("-") + 1); // assuming '-' is in the name
+	}
+	else {
+		this.is3d = false;
+	}
 }
 
 Costume.prototype.maxExtent = StageMorph.prototype.dimensions;

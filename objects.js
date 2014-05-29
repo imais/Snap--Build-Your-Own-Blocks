@@ -5397,8 +5397,6 @@ function Costume(canvas, name, rotationCenter) {
     this.version = Date.now(); // for observer optimization
     this.loaded = null; // for de-serialization only
 
-	console.log( "Costume.name: ", this.name );
-
 	// 3D extension
 	if (this.name != null && (-1 < this.name.indexOf("3d") || -1 < this.name.indexOf("3D"))) {
 		this.is3d = true;

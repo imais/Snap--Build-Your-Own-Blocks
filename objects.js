@@ -41,6 +41,7 @@
         SpriteHighlightMorph
         StageMorph
         Costume
+		    Costume3D
             SVG_Costume
         CostumeEditorMorph
         Sound
@@ -224,6 +225,12 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: 'turn %counterclockwise %n degrees',
             defaults: [15]
         },
+        turn3D: {
+            type: 'command',
+            category: 'motion',
+            spec: 'turn x: %n y: %n z: %n degrees',
+            defaults: [0, 0, 0]
+        },
         setHeading: {
             type: 'command',
             category: 'motion',
@@ -233,6 +240,12 @@ SpriteMorph.prototype.initBlocks = function () {
             type: 'command',
             category: 'motion',
             spec: 'point towards %dst'
+        },
+        point3D: {
+            type: 'command',
+            category: 'motion',
+            spec: 'point x: %n y: %n z: %n degrees',
+            defaults: [0, 0, 0]
         },
         gotoXY: {
             type: 'command',
@@ -1387,13 +1400,14 @@ SpriteMorph.prototype.drawNew = function () {
         ctx.translate(shift.x, shift.y);
         ctx.rotate(radians(facing - 90));
 
-		if (this.costume.is3d) {
-			this.renderer3d = this.render3dObject(this.image, costumeExtent.x, costumeExtent.y );
-			this.isRendering3d = true;
+		if (this.costume instanceof Costume3D) {
+			this.render3dObject(this.image, costumeExtent.x, costumeExtent.y,
+								this.costume.url);
+			this.isRendering3D = true;
 		}
 		else {
 			ctx.drawImage(pic.contents, 0, 0);
-			this.isRendering3d = false;
+			this.isRendering3D = false;
 		}
 
         // adjust my position to the rotation
@@ -1443,49 +1457,52 @@ SpriteMorph.prototype.drawNew = function () {
 };
 
 
-SpriteMorph.prototype.render3dObject = function (aCanvas, width, height) {
+SpriteMorph.prototype.render3dObject = function (aCanvas, width, height, url) {
+	var myself = this,
+	loader = new THREE.JSONLoader();
+
 	this.scene = new THREE.Scene();
-
-	// mesh
-	var geometry;
-	switch(this.costume.objectType3d) {
-	case "cylinder":
-		geometry = new THREE.CylinderGeometry(2, 2, 5, 16);
-		break;
-	case "cone":
-		geometry = new THREE.CylinderGeometry(0, 2, 5, 16);
-		break;
-	case "sphere":
-		geometry = new THREE.SphereGeometry(2, 16, 16);
-		break;
-	case "cube":
-	default:
-		geometry = new THREE.BoxGeometry(3, 3, 3);
-		break;
-	}
-	var color = new THREE.Color(this.color.r/255, this.color.g/255, this.color.b/255);
-	var material = new THREE.MeshLambertMaterial({color: color});
-	this.object = new THREE.Mesh(geometry, material);
-	this.scene.add(this.object);
-
-	// camera
 	this.camera = new THREE.PerspectiveCamera(45, width/height, 0.1, 1000);
 	this.camera.position.z = 10;
 	this.scene.add(this.camera);
 
-	// create a point light
-	var pointLight = new THREE.PointLight( 0xFFFFFF );
-	pointLight.position.x = 10;
-	pointLight.position.y = 50;
-	pointLight.position.z = 130;
-	this.scene.add(pointLight);
+	this.renderer = new THREE.CanvasRenderer({canvas: aCanvas});
+	this.renderer.setSize(width, height);
 
-	// finally, render
-	var renderer = new THREE.CanvasRenderer({canvas: aCanvas});
-	renderer.setSize(width, height);
-	renderer.render(this.scene, this.camera);
+	// load 3D geometry from the url
+    loader.load( url, function( geometry ) {
+		// myself refers to this SpriteMorph object
 
-	return renderer;
+		// create a mesh
+		var color = new THREE.Color(myself.color.r/255, myself.color.g/255, myself.color.b/255);
+		var mesh = new THREE.MeshLambertMaterial({color: color});
+		myself.object = new THREE.Mesh( geometry, mesh );
+		myself.object.scale.set( 0.10, 0.10, 0.10 ); // TODO: figure out scaling mechanism properly
+		myself.object.position.y = 0;
+		myself.object.position.x = 0;
+		myself.scene.add(myself.object);
+
+		// create a point light
+		var pointLight = new THREE.PointLight( 0xFFFFFF );
+		pointLight.position.x = 10;
+		pointLight.position.y = 50;
+		pointLight.position.z = 130;
+		myself.scene.add(pointLight);
+
+		var isWarped = this.isWarped,
+		context = aCanvas.getContext('2d');
+		if (isWarped) {
+			myself.endWarp();
+		}
+
+		myself.renderer.render(myself.scene, myself.camera);
+
+		context.restore();
+		myself.changed();
+		if (isWarped) {
+			myself.startWarp();
+		}
+    } );
 }
 
 
@@ -1655,9 +1672,11 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('forward'));
         blocks.push(block('turn'));
         blocks.push(block('turnLeft'));
+		blocks.push(block('turn3D'));
         blocks.push('-');
         blocks.push(block('setHeading'));
         blocks.push(block('doFaceTowards'));
+		blocks.push(block('point3D'));
         blocks.push('-');
         blocks.push(block('gotoXY'));
         blocks.push(block('doGotoObject'));
@@ -2675,27 +2694,27 @@ SpriteMorph.prototype.doStamp = function () {
 
 // SpriteMorph 3D experiment
 
-SpriteMorph.prototype.step = function () {
-	if (this.isRendering3d) {
-		var canvas = this.image,
-		// canvas = stage.penTrails(),
-		context = canvas.getContext('2d'),
-		isWarped = this.isWarped;
-		if (isWarped) {
-			this.endWarp();
-		}
+// SpriteMorph.prototype.step = function () {
+// 	if (this.isRendering3D) {
+// 		var canvas = this.image,
+// 		// canvas = stage.penTrails(),
+// 		context = canvas.getContext('2d'),
+// 		isWarped = this.isWarped;
+// 		if (isWarped) {
+// 			this.endWarp();
+// 		}
 
-		this.object.rotation.x += 0.01;
-		this.object.rotation.y += 0.01;
-		this.renderer3d.render(this.scene, this.camera);
+// 		// this.object.rotation.x += 0.01;
+// 		// this.object.rotation.y += 0.01;
+// 		this.renderer.render(this.scene, this.camera);
 
-		context.restore();
-		this.changed();
-		if (isWarped) {
-			this.startWarp();
-		}
-	}
-}
+// 		context.restore();
+// 		this.changed();
+// 		if (isWarped) {
+// 			this.startWarp();
+// 		}
+// 	}
+// }
 
 
 SpriteMorph.prototype.doStampCube = function () {
@@ -3080,12 +3099,62 @@ SpriteMorph.prototype.faceToXY = function (x, y) {
     this.setHeading(angle + 90);
 };
 
+SpriteMorph.prototype.point3D = function (degX, degY, degZ) {
+	if (this.isRendering3D) {
+		var canvas = this.image,
+		context = canvas.getContext('2d'),
+		isWarped = this.isWarped;
+		if (isWarped) {
+			this.endWarp();
+		}
+		
+		var radian = Math.PI / 180;
+
+		this.object.rotation.x = radian * degX;
+		this.object.rotation.y = radian * degY;
+		this.object.rotation.z = radian * degZ;
+
+		this.renderer.render(this.scene, this.camera);
+
+		context.restore();
+		this.changed();
+		if (isWarped) {
+			this.startWarp();
+		}
+	}	
+};
+
 SpriteMorph.prototype.turn = function (degrees) {
     this.setHeading(this.heading + (+degrees || 0));
 };
 
 SpriteMorph.prototype.turnLeft = function (degrees) {
     this.setHeading(this.heading - (+degrees || 0));
+};
+
+SpriteMorph.prototype.turn3D = function (degX, degY, degZ) {
+	if (this.isRendering3D) {
+		var canvas = this.image,
+		context = canvas.getContext('2d'),
+		isWarped = this.isWarped;
+		if (isWarped) {
+			this.endWarp();
+		}
+		
+		var radian = Math.PI / 180;
+
+		this.object.rotation.x += radian * degX;
+		this.object.rotation.y += radian * degY;
+		this.object.rotation.z += radian * degZ;
+
+		this.renderer.render(this.scene, this.camera);
+
+		context.restore();
+		this.changed();
+		if (isWarped) {
+			this.startWarp();
+		}
+	}	
 };
 
 SpriteMorph.prototype.xPosition = function () {
@@ -3209,6 +3278,7 @@ SpriteMorph.prototype.bounceOffEdge = function () {
     ));
     this.positionTalkBubble();
 };
+
 
 // SpriteMorph message broadcasting
 
@@ -5396,15 +5466,6 @@ function Costume(canvas, name, rotationCenter) {
     this.rotationCenter = rotationCenter || this.center();
     this.version = Date.now(); // for observer optimization
     this.loaded = null; // for de-serialization only
-
-	// 3D extension
-	if (this.name != null && (-1 < this.name.indexOf("3d") || -1 < this.name.indexOf("3D"))) {
-		this.is3d = true;
-		this.objectType3d = this.name.substr(this.name.indexOf("-") + 1); // assuming '-' is in the name
-	}
-	else {
-		this.is3d = false;
-	}
 }
 
 Costume.prototype.maxExtent = StageMorph.prototype.dimensions;
@@ -5675,6 +5736,42 @@ Costume.prototype.isTainted = function () {
     }
     return false;
 };
+
+
+// Costume3D /////////////////////////////////////////////////////////////
+
+/*
+    I am a costume containing a 3D object
+*/
+
+// Costume3D inherits from Costume:
+
+Costume3D.prototype = new Costume();
+Costume3D.prototype.constructor = Costume3D;
+Costume3D.uber = Costume.prototype;
+
+// Costume3D instance creation
+
+function Costume3D(canvas, name, url, rotationCenter) {
+    this.contents = canvas || newCanvas();
+    this.shrinkToFit(this.maxExtent);
+    this.name = name || null;
+    this.rotationCenter = rotationCenter || this.center();
+    this.version = Date.now(); // for observer optimization
+    this.loaded = null; // for de-serialization only
+
+	// added for 3D
+	this.url = url;
+}
+
+Costume3D.prototype.toString = function () {
+    return 'a Costume3D(' + this.name + ')';
+};
+
+// Costume3D duplication
+// Costume3D flipping
+// Costume3D thumbnail
+
 
 // SVG_Costume /////////////////////////////////////////////////////////////
 

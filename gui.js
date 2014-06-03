@@ -2560,7 +2560,7 @@ IDE_Morph.prototype.projectMenu = function () {
 
 				function loadCostume(name) {
 					var url = dir + '/' + name,
-					canvas = newCanvas(new Point(100, 100)); // TODO: make width & height variables
+					canvas = newCanvas(new Point(120, 120)); // TODO: make width & height variables
 					myself.dropped3dObject(canvas, name, url);	
 				}
 

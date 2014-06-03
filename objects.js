@@ -1200,7 +1200,7 @@ SpriteMorph.prototype.blockAlternatives = {
     setBrightness: ['changeBrightness', 'setHue', 'changeHue'],
     changeSize: ['setSize'],
     setSize: ['changeSize'],
-    doStampCube: ['doStampCube' ],
+    // doStampCube: ['doStampCube' ],
 
     // control:
     receiveGo: ['receiveClick'],
@@ -1274,7 +1274,7 @@ SpriteMorph.prototype.init = function (globals) {
 
     this.isDraggable = true;
     this.isDown = false;
-	this.isRendering3d = false;
+	this.isRendering3D = false;
 
     this.heading = 90;
     this.changed();
@@ -1401,8 +1401,15 @@ SpriteMorph.prototype.drawNew = function () {
         ctx.rotate(radians(facing - 90));
 
 		if (this.costume instanceof Costume3D) {
+			// console.log( "costumeExtent.x:" + costumeExtent.x +
+			// 			 ", costumeExtent.y:" + costumeExtent.y );
+			var degX = 0, degY = 0;
+			if (this.isRendering3D) {
+				degX = degrees(this.object.rotation.x);
+				degY = degrees(this.object.rotation.y);
+			}
 			this.render3dObject(this.image, costumeExtent.x, costumeExtent.y,
-								this.costume.url);
+								this.costume.url, degX, degY, this.heading);
 			this.isRendering3D = true;
 		}
 		else {
@@ -1457,7 +1464,7 @@ SpriteMorph.prototype.drawNew = function () {
 };
 
 
-SpriteMorph.prototype.render3dObject = function (aCanvas, width, height, url) {
+SpriteMorph.prototype.render3dObject = function (aCanvas, width, height, url, degX, degY, degZ) {
 	var myself = this,
 	loader = new THREE.JSONLoader();
 
@@ -1480,6 +1487,9 @@ SpriteMorph.prototype.render3dObject = function (aCanvas, width, height, url) {
 		myself.object.scale.set( 0.10, 0.10, 0.10 ); // TODO: figure out scaling mechanism properly
 		myself.object.position.y = 0;
 		myself.object.position.x = 0;
+		myself.object.rotation.x = radians(degX);
+		myself.object.rotation.y = radians(degY);
+		myself.object.rotation.z = radians((360 - degZ) % 360);
 		myself.scene.add(myself.object);
 
 		// create a point light
@@ -1504,6 +1514,28 @@ SpriteMorph.prototype.render3dObject = function (aCanvas, width, height, url) {
 		}
     } );
 }
+
+
+SpriteMorph.prototype.update3dObject = function (degX, degY, degZ) {
+	var canvas = this.image,
+	context = canvas.getContext('2d'),
+	isWarped = this.isWarped;
+	if (isWarped) {
+		this.endWarp();
+	}
+	
+	this.object.rotation.x = radians(degX);
+	this.object.rotation.y = radians(degY);
+	this.object.rotation.z = radians(degZ);
+
+	this.renderer.render(this.scene, this.camera);
+
+	context.restore();
+	this.changed();
+	if (isWarped) {
+		this.startWarp();
+	}
+}	
 
 
 SpriteMorph.prototype.endWarp = function () {
@@ -1789,7 +1821,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('setSize'));
         blocks.push('-');
         blocks.push(block('doStamp'));
-        blocks.push(block('doStampCube'));
+        // blocks.push(block('doStampCube'));
 
     } else if (cat === 'control') {
 
@@ -3101,27 +3133,8 @@ SpriteMorph.prototype.faceToXY = function (x, y) {
 
 SpriteMorph.prototype.point3D = function (degX, degY, degZ) {
 	if (this.isRendering3D) {
-		var canvas = this.image,
-		context = canvas.getContext('2d'),
-		isWarped = this.isWarped;
-		if (isWarped) {
-			this.endWarp();
-		}
-		
-		var radian = Math.PI / 180;
-
-		this.object.rotation.x = radian * degX;
-		this.object.rotation.y = radian * degY;
-		this.object.rotation.z = radian * degZ;
-
-		this.renderer.render(this.scene, this.camera);
-
-		context.restore();
-		this.changed();
-		if (isWarped) {
-			this.startWarp();
-		}
-	}	
+		this.update3dObject(degX, degY, degZ);
+	}
 };
 
 SpriteMorph.prototype.turn = function (degrees) {
@@ -3134,27 +3147,11 @@ SpriteMorph.prototype.turnLeft = function (degrees) {
 
 SpriteMorph.prototype.turn3D = function (degX, degY, degZ) {
 	if (this.isRendering3D) {
-		var canvas = this.image,
-		context = canvas.getContext('2d'),
-		isWarped = this.isWarped;
-		if (isWarped) {
-			this.endWarp();
-		}
-		
-		var radian = Math.PI / 180;
-
-		this.object.rotation.x += radian * degX;
-		this.object.rotation.y += radian * degY;
-		this.object.rotation.z += radian * degZ;
-
-		this.renderer.render(this.scene, this.camera);
-
-		context.restore();
-		this.changed();
-		if (isWarped) {
-			this.startWarp();
-		}
-	}	
+		degX += degrees(this.object.rotation.x);
+		degY += degrees(this.object.rotation.y);
+		degZ += degrees(this.object.rotation.z);
+		this.update3dObject(degX, degY, degZ);
+	}
 };
 
 SpriteMorph.prototype.xPosition = function () {

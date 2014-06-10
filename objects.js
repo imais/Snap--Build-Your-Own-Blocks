@@ -1464,13 +1464,31 @@ SpriteMorph.prototype.drawNew = function () {
 };
 
 
+// SpriteMorph 3D 
+const THREED_OBJECT_WIDTH = 160;
+const THREED_OBJECT_HEIGHT = 160;
+const THREED_FIELD_OF_VIEW = 45; // degree
+const THREED_Z_DIST_TO_OBJECT = 10;
+var isShowingSphere = false;
+
+SpriteMorph.prototype.compute3dScale = function(geometry, fov, dist, aspect) {
+	// see: http://stackoverflow.com/questions/13350875/three-js-width-of-view/13351534#13351534
+	var sphere = geometry.boundingSphere; // THREE.Sphere	
+	var visible_height = 2 * Math.tan(radians(fov / 2)) * dist;
+	var visible_width = aspect * visible_height;
+	var scale = Math.min(visible_height / (2 * sphere.radius), visible_width / (2 * sphere.radius));
+
+	return [scale * 0.92, sphere]; // TODO: multiplied by a constant works, but kludgy
+}
+
+
 SpriteMorph.prototype.render3dObject = function (aCanvas, width, height, url, degX, degY, degZ) {
 	var myself = this,
 	loader = new THREE.JSONLoader();
 
 	this.scene = new THREE.Scene();
-	this.camera = new THREE.PerspectiveCamera(45, width/height, 0.1, 1000);
-	this.camera.position.z = 10;
+	this.camera = new THREE.PerspectiveCamera(THREED_FIELD_OF_VIEW, width/height, 0.1, 1000);
+	this.camera.position.z = THREED_Z_DIST_TO_OBJECT;
 	this.scene.add(this.camera);
 
 	this.renderer = new THREE.CanvasRenderer({canvas: aCanvas});
@@ -1480,23 +1498,44 @@ SpriteMorph.prototype.render3dObject = function (aCanvas, width, height, url, de
     loader.load( url, function( geometry ) {
 		// myself refers to this SpriteMorph object
 
-		// create a mesh
+		// compute a proper scaling factor and the center of the geometry
+		var results = myself.compute3dScale( geometry, 
+									 THREED_FIELD_OF_VIEW, THREED_Z_DIST_TO_OBJECT,
+									 width/height );
+		var scale = results[0], sphere = results[1];
+
+		// create a mesh and shift it so that it is centered
 		var color = new THREE.Color(myself.color.r/255, myself.color.g/255, myself.color.b/255);
-		var mesh = new THREE.MeshLambertMaterial({color: color});
-		myself.object = new THREE.Mesh( geometry, mesh );
-		myself.object.scale.set( 0.10, 0.10, 0.10 ); // TODO: figure out scaling mechanism properly
-		myself.object.position.y = 0;
-		myself.object.position.x = 0;
+		var mesh = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial({color: color}) );
+		mesh.position.set( -sphere.center.x, -sphere.center.y, -sphere.center.z );
+
+		// create a wrapper to the mesh
+		// see: http://stackoverflow.com/questions/12835361/three-js-move-custom-geometry-to-origin
+		myself.object = new THREE.Object3D();
+		myself.object.add( mesh );
+		myself.object.scale.set( scale, scale, scale );
 		myself.object.rotation.x = radians(degX);
 		myself.object.rotation.y = radians(degY);
 		myself.object.rotation.z = radians((360 - degZ) % 360);
 		myself.scene.add(myself.object);
 
+		// create a sphere for debug
+		if (isShowingSphere) {
+			var sphereGeometry = new THREE.SphereGeometry(sphere.radius, 32, 32);
+			var sphereMmaterial = new THREE.MeshBasicMaterial( {color: 0xcccccc, 
+																wireframe: true,
+																transparent: true,
+																opacity: 0.2 } );
+			var sphereMesh = new THREE.Mesh(sphereGeometry, sphereMmaterial);
+			sphereMesh.scale.set( scale, scale, scale );
+			myself.scene.add(sphereMesh);
+		}
+
 		// create a point light
 		var pointLight = new THREE.PointLight( 0xFFFFFF );
-		pointLight.position.x = 10;
+		pointLight.position.x = 50;
 		pointLight.position.y = 50;
-		pointLight.position.z = 130;
+		pointLight.position.z = 100;
 		myself.scene.add(pointLight);
 
 		var isWarped = this.isWarped,

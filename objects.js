@@ -1400,7 +1400,7 @@ SpriteMorph.prototype.drawNew = function () {
         ctx.rotate(radians(facing - 90));
 
 		if (this.costume instanceof Costume3D) {
-			if (!this.isRendering3D) {
+			if (!this.isRendering3D || this.colorChange) {
 				this.render3dObject(pic.contents,	// source
 									this.image,		// destination (rotated canvas)
 									this.costume.url);
@@ -1408,7 +1408,7 @@ SpriteMorph.prototype.drawNew = function () {
 			}
 			else {
 				this.update3dObject(pic.contents,	// source
-									this.image,		// destination (rotated canvas)
+									this.image );	// destination (rotated canvas)
 			}
 		}
 		else {
@@ -1458,7 +1458,7 @@ SpriteMorph.prototype.drawNew = function () {
 	
 	//Check if color change has been applied earlier in script
 	if(this.colorChange){
-		this.changeCostumeColor(this.costumeColor);
+		this.changeCostumeColor(this.costumeColor); // This does not seem to be implemented
 	}
 };
 
@@ -2643,8 +2643,10 @@ SpriteMorph.prototype.removeClone = function () {
 SpriteMorph.prototype.setColor = function (aColor) {
     var x = this.xPosition(),
         y = this.yPosition();
+	this.colorChange = false;
     if (!this.color.eq(aColor)) {
         this.color = aColor;
+		this.colorChange = true;
         this.drawNew();
         this.gotoXY(x, y);
     }

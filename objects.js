@@ -1332,7 +1332,6 @@ SpriteMorph.prototype.setName = function (string) {
 };
 
 // SpriteMorph rendering
-
 SpriteMorph.prototype.drawNew = function () {
     var myself = this,
         currentCenter = this.center(),
@@ -1391,7 +1390,7 @@ SpriteMorph.prototype.drawNew = function () {
             pic.center()
         ).subtract(origin);
 
-        // create a new, adequately dimensioned canvas
+		// create a new, adequately dimensioned canvas
         // and draw the costume on it
         this.image = newCanvas(costumeExtent);
         this.silentSetExtent(costumeExtent);
@@ -1401,16 +1400,16 @@ SpriteMorph.prototype.drawNew = function () {
         ctx.rotate(radians(facing - 90));
 
 		if (this.costume instanceof Costume3D) {
-			// console.log( "costumeExtent.x:" + costumeExtent.x +
-			// 			 ", costumeExtent.y:" + costumeExtent.y );
-			var degX = 0, degY = 0;
-			if (this.isRendering3D) {
-				degX = degrees(this.object.rotation.x);
-				degY = degrees(this.object.rotation.y);
+			if (!this.isRendering3D) {
+				this.render3dObject(pic.contents,	// source
+									this.image,		// destination (rotated canvas)
+									this.costume.url);
+				this.isRendering3D = true;
 			}
-			this.render3dObject(this.image, costumeExtent.x, costumeExtent.y,
-								this.costume.url, degX, degY, this.heading);
-			this.isRendering3D = true;
+			else {
+				this.update3dObject(pic.contents,	// source
+									this.image,		// destination (rotated canvas)
+			}
 		}
 		else {
 			ctx.drawImage(pic.contents, 0, 0);
@@ -1478,12 +1477,13 @@ SpriteMorph.prototype.compute3dScale = function(geometry, fov, dist, aspect) {
 	var visible_width = aspect * visible_height;
 	var scale = Math.min(visible_height / (2 * sphere.radius), visible_width / (2 * sphere.radius));
 
-	return [scale * 0.92, sphere]; // TODO: multiplied by a constant works, but kludgy
+	return [scale * 0.92, sphere]; // TODO: this works, but kludgy
 }
 
 
-SpriteMorph.prototype.render3dObject = function (aCanvas, width, height, url, degX, degY, degZ) {
+SpriteMorph.prototype.render3dObject = function (srcCanvas, dstCanvas, url) {
 	var myself = this,
+	width = srcCanvas.width, height = srcCanvas.height,
 	loader = new THREE.JSONLoader();
 
 	this.scene = new THREE.Scene();
@@ -1491,7 +1491,7 @@ SpriteMorph.prototype.render3dObject = function (aCanvas, width, height, url, de
 	this.camera.position.z = THREED_Z_DIST_TO_OBJECT;
 	this.scene.add(this.camera);
 
-	this.renderer = new THREE.CanvasRenderer({canvas: aCanvas});
+	this.renderer = new THREE.CanvasRenderer({canvas: srcCanvas});
 	this.renderer.setSize(width, height);
 
 	// load 3D geometry from the url
@@ -1514,9 +1514,6 @@ SpriteMorph.prototype.render3dObject = function (aCanvas, width, height, url, de
 		myself.object = new THREE.Object3D();
 		myself.object.add( mesh );
 		myself.object.scale.set( scale, scale, scale );
-		myself.object.rotation.x = radians(degX);
-		myself.object.rotation.y = radians(degY);
-		myself.object.rotation.z = radians((360 - degZ) % 360);
 		myself.scene.add(myself.object);
 
 		// create a sphere for debug
@@ -1525,7 +1522,7 @@ SpriteMorph.prototype.render3dObject = function (aCanvas, width, height, url, de
 			var sphereMmaterial = new THREE.MeshBasicMaterial( {color: 0xcccccc, 
 																wireframe: true,
 																transparent: true,
-																opacity: 0.2 } );
+																opacity: 0.3 } );
 			var sphereMesh = new THREE.Mesh(sphereGeometry, sphereMmaterial);
 			sphereMesh.scale.set( scale, scale, scale );
 			myself.scene.add(sphereMesh);
@@ -1539,35 +1536,39 @@ SpriteMorph.prototype.render3dObject = function (aCanvas, width, height, url, de
 		myself.scene.add(pointLight);
 
 		var isWarped = this.isWarped,
-		context = aCanvas.getContext('2d');
+		context = srcCanvas.getContext('2d');
 		if (isWarped) {
 			myself.endWarp();
 		}
 
 		myself.renderer.render(myself.scene, myself.camera);
 
+		// project the rendered 3D object to the destination canvas
+		// NOTE: it is important to do this here because so in drawNew() does not work due to timing
+		var context2 = dstCanvas.getContext('2d');
+		context2.drawImage(srcCanvas, 0, 0);  
+
 		context.restore();
 		myself.changed();
 		if (isWarped) {
 			myself.startWarp();
 		}
+
     } );
 }
 
 
-SpriteMorph.prototype.update3dObject = function (degX, degY, degZ) {
-	var canvas = this.image,
-	context = canvas.getContext('2d'),
+SpriteMorph.prototype.update3dObject = function (srcCanvas, dstCanvas) {
+	var context = srcCanvas.getContext('2d'),
 	isWarped = this.isWarped;
 	if (isWarped) {
 		this.endWarp();
 	}
 	
-	this.object.rotation.x = radians(degX);
-	this.object.rotation.y = radians(degY);
-	this.object.rotation.z = radians(degZ);
-
 	this.renderer.render(this.scene, this.camera);
+
+	var context2 = dstCanvas.getContext('2d');
+	context2.drawImage(srcCanvas, 0, 0);  
 
 	context.restore();
 	this.changed();
@@ -3172,7 +3173,10 @@ SpriteMorph.prototype.faceToXY = function (x, y) {
 
 SpriteMorph.prototype.point3D = function (degX, degY, degZ) {
 	if (this.isRendering3D) {
-		this.update3dObject(degX, degY, degZ);
+		this.object.rotation.x = radians(degX);
+		this.object.rotation.y = radians(degY);
+		this.object.rotation.z = radians(degZ);
+		this.drawNew();
 	}
 };
 
@@ -3186,10 +3190,10 @@ SpriteMorph.prototype.turnLeft = function (degrees) {
 
 SpriteMorph.prototype.turn3D = function (degX, degY, degZ) {
 	if (this.isRendering3D) {
-		degX += degrees(this.object.rotation.x);
-		degY += degrees(this.object.rotation.y);
-		degZ += degrees(this.object.rotation.z);
-		this.update3dObject(degX, degY, degZ);
+		this.object.rotation.x += radians(degX);
+		this.object.rotation.y += radians(degY);
+		this.object.rotation.z += radians(degZ);
+		this.drawNew();
 	}
 };
 

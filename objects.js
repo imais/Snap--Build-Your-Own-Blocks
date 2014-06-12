@@ -1257,6 +1257,7 @@ SpriteMorph.prototype.init = function (globals) {
 	this.originalPixels = null;
 	this.colorChange = false; //Flag to check if color change has been applied
 	this.costumeColor = null;
+	this.costumeChange = true; //Flag to check if costume change has been applied
 
     // sprite nesting properties
     this.parts = []; // not serialized, only anchor (name)
@@ -1400,11 +1401,12 @@ SpriteMorph.prototype.drawNew = function () {
         ctx.rotate(radians(facing - 90));
 
 		if (this.costume instanceof Costume3D) {
-			if (!this.isRendering3D || this.colorChange) {
+			if (!this.isRendering3D || this.colorChange || this.costumeChange) {
 				this.render3dObject(pic.contents,	// source
 									this.image,		// destination (rotated canvas)
 									this.costume.url);
 				this.isRendering3D = true;
+				this.costumeChange = false;
 			}
 			else {
 				this.update3dObject(pic.contents,	// source
@@ -2436,6 +2438,7 @@ SpriteMorph.prototype.wearCostume = function (costume) {
         this.positionTalkBubble();
     }
     this.version = Date.now();
+	this.costumeChange = true;
 };
 
 SpriteMorph.prototype.getCostumeIdx = function () {

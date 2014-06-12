@@ -1518,7 +1518,7 @@ SpriteMorph.prototype.render3dObject = function (srcCanvas, dstCanvas, url) {
 		myself.object.scale.set( scale, scale, scale );
 		myself.scene.add(myself.object);
 
-		// create a sphere for debug
+		// create a sphere for debug purpose
 		if (isShowingSphere) {
 			var sphereGeometry = new THREE.SphereGeometry(sphere.radius, 32, 32);
 			var sphereMmaterial = new THREE.MeshBasicMaterial( {color: 0xcccccc, 
@@ -1542,6 +1542,7 @@ SpriteMorph.prototype.render3dObject = function (srcCanvas, dstCanvas, url) {
 		if (isWarped) {
 			myself.endWarp();
 		}
+		context.save();
 
 		myself.renderer.render(myself.scene, myself.camera);
 
@@ -1566,6 +1567,7 @@ SpriteMorph.prototype.update3dObject = function (srcCanvas, dstCanvas) {
 	if (isWarped) {
 		this.endWarp();
 	}
+    context.save();
 	
 	this.renderer.render(this.scene, this.camera);
 
@@ -3183,6 +3185,11 @@ SpriteMorph.prototype.point3D = function (degX, degY, degZ) {
 		this.object.rotation.z = radians(degZ);
 		this.drawNew();
 	}
+
+	// propagate to my parts
+	this.parts.forEach(function (part) {
+		part.point3D(degX, degY, degZ);
+	});
 };
 
 SpriteMorph.prototype.turn = function (degrees) {
@@ -3200,6 +3207,11 @@ SpriteMorph.prototype.turn3D = function (degX, degY, degZ) {
 		this.object.rotation.z += radians(degZ);
 		this.drawNew();
 	}
+
+	// propagate to my parts
+	this.parts.forEach(function (part) {
+		part.turn3D(degX, degY, degZ);
+	});
 };
 
 SpriteMorph.prototype.xPosition = function () {

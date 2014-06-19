@@ -1302,6 +1302,7 @@ SpriteMorph.prototype.init = function (globals) {
 	this.xRotation = 0; // degrees
 	this.yRotation = 0;
 	this.zRotation = 0;
+	this.geometry = null;
 
     this.changed();
     this.drawNew();
@@ -1514,29 +1515,16 @@ SpriteMorph.prototype.compute3dScale = function(geometry, fov, dist, aspect) {
 }
 
 
-SpriteMorph.prototype.render3dObject = function (aCanvas, url) {
-	console.time('render3dObject');
+SpriteMorph.prototype.jsonLoaderCallback = function (spriteMorph) {
+	var myself = spriteMorph;
 
-	var myself = this,
-	width = aCanvas.width, height = aCanvas.height,
-	loader = new THREE.JSONLoader();
-
-	this.scene = new THREE.Scene();
-	this.camera = new THREE.PerspectiveCamera(THREEJS_FIELD_OF_VIEW, width/height, 0.1, 1000);
-	this.camera.position.z = THREEJS_CAMERA_Z_POSITION;
-	this.scene.add(this.camera);
-
-	this.renderer = new THREE.CanvasRenderer({canvas: aCanvas});
-	this.renderer.setSize(width, height);
-
-	// load 3D geometry from the url
-    loader.load( url, function( geometry ) {
-		// myself refers to this SpriteMorph object
+	return function(geometry) {
+		myself.geomtry = geometry;
 
 		// compute a proper scaling factor and the center of the geometry
-		var results = myself.compute3dScale( geometry, 
-									 THREEJS_FIELD_OF_VIEW, THREEJS_CAMERA_Z_POSITION,
-									 width/height );
+		var results = myself.compute3dScale(geometry, 
+											THREEJS_FIELD_OF_VIEW, THREEJS_CAMERA_Z_POSITION,
+											myself.canvas3D.width/myself.canvas3D.height);
 		var scale = results[0], sphere = results[1];
 
 		// create a mesh and shift it so that it is centered
@@ -1558,9 +1546,9 @@ SpriteMorph.prototype.render3dObject = function (aCanvas, url) {
 		if (isShowingSphere) {
 			var sphereGeometry = new THREE.SphereGeometry(sphere.radius, 32, 32);
 			var sphereMaterial = new THREE.MeshBasicMaterial( {color: 0xcccccc, 
-																wireframe: true,
-																transparent: true,
-																opacity: 0.3 } );
+															   wireframe: true,
+															   transparent: true,
+															   opacity: 0.3 } );
 			var sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
 			sphereMesh.scale.set( scale, scale, scale );
 			myself.scene.add(sphereMesh);
@@ -1587,8 +1575,8 @@ SpriteMorph.prototype.render3dObject = function (aCanvas, url) {
 		pointLight.position.z = 100;
 		myself.scene.add(pointLight);
 
-		var isWarped = this.isWarped,
-		context = aCanvas.getContext('2d');
+		var isWarped = myself.isWarped,
+		context = myself.canvas3D.getContext('2d');
 		if (isWarped) {
 			myself.endWarp();
 		}
@@ -1601,9 +1589,34 @@ SpriteMorph.prototype.render3dObject = function (aCanvas, url) {
 		if (isWarped) {
 			myself.startWarp();
 		}
+	}
+}
+
+
+SpriteMorph.prototype.render3dObject = function (aCanvas, url) {
+	console.time('render3dObject');
+
+	var loader = new THREE.JSONLoader();
+
+	this.scene = new THREE.Scene();
+	this.camera = new THREE.PerspectiveCamera(THREEJS_FIELD_OF_VIEW, 
+											  aCanvas.width/aCanvas.height, 0.1, 1000);
+	this.camera.position.z = THREEJS_CAMERA_Z_POSITION;
+	this.scene.add(this.camera);
+	this.renderer = new THREE.CanvasRenderer({canvas: aCanvas});
+	this.renderer.setSize(aCanvas.width, aCanvas.height);
+	this.canvas3D = aCanvas;
+
+	// load a 3D geometry from the url
+	if (this.geometry) {
+		// you don't have to read the geometry again
+		(this.jsonLoaderCallback(this))(this.geometry);
+	} 
+	else {
+		loader.load(url, this.jsonLoaderCallback(this));
+	}
 
 	console.timeEnd('render3dObject');
-    } );
 }
 
 

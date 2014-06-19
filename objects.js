@@ -1401,6 +1401,11 @@ SpriteMorph.prototype.drawNew = function () {
 			stageScale = this.parent instanceof StageMorph ? this.parent.scale : 1,
 			costumeExtent = new Point(canvasSize, canvasSize).multiplyBy(this.scale * stageScale);
 
+		if (this.isWarped) {
+			this.endWarp();
+		}
+		this.changed(); // this is important to clear the current image
+
 		this.image = newCanvas(costumeExtent);
 		this.silentSetExtent(costumeExtent);
 		this.render3dObject(this.image,	this.costume.url);
@@ -1519,7 +1524,7 @@ SpriteMorph.prototype.jsonLoaderCallback = function (spriteMorph) {
 	var myself = spriteMorph;
 
 	return function(geometry) {
-		myself.geomtry = geometry;
+		myself.geometry = geometry;
 
 		// compute a proper scaling factor and the center of the geometry
 		var results = myself.compute3dScale(geometry, 
@@ -1575,18 +1580,14 @@ SpriteMorph.prototype.jsonLoaderCallback = function (spriteMorph) {
 		pointLight.position.z = 100;
 		myself.scene.add(pointLight);
 
-		var isWarped = myself.isWarped,
 		context = myself.canvas3D.getContext('2d');
-		if (isWarped) {
-			myself.endWarp();
-		}
 		context.save();
 
 		myself.renderer.render(myself.scene, myself.camera);
 
 		context.restore();
 		myself.changed();
-		if (isWarped) {
+		if (myself.isWarped) {
 			myself.startWarp();
 		}
 	}
@@ -1609,7 +1610,7 @@ SpriteMorph.prototype.render3dObject = function (aCanvas, url) {
 
 	// load a 3D geometry from the url
 	if (this.geometry) {
-		// you don't have to read the geometry again
+		// you don't have to read the geometry again - synchronized function call
 		(this.jsonLoaderCallback(this))(this.geometry);
 	} 
 	else {

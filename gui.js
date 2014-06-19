@@ -1601,6 +1601,9 @@ IDE_Morph.prototype.dropped3dObject = function (aCanvas, name, url) {
 
     this.currentSprite.addCostume(costume);
     this.currentSprite.wearCostume(costume);
+	// this.currentSprite.freshPalette();
+	// this.palette.changed();
+	// this.palette.drawNew();
     this.spriteBar.tabBar.tabTo('costumes');
     this.hasChangedMedia = true;
 };
@@ -2559,9 +2562,10 @@ IDE_Morph.prototype.projectMenu = function () {
                 );
 
 				function loadCostume(name) {
-					var url = dir + '/' + name,
-					canvas = newCanvas(new Point(THREED_OBJECT_WIDTH, THREED_OBJECT_HEIGHT));
-					myself.dropped3dObject(canvas, name, url);	
+					var url = dir + '/' + name;
+					// canvas = newCanvas(new Point(THREED_DEFAULT_OBJECT_WIDTH, 
+					// 							 THREED_DEFAULT_OBJECT_HEIGHT));
+					myself.dropped3dObject(null, name, url);	
 				}
 
 				names.forEach(function (line) {

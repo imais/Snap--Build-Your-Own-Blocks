@@ -253,6 +253,12 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: 'go to x: %n y: %n',
             defaults: [0, 0]
         },
+        gotoXYZ: {
+            type: 'command',
+            category: 'motion',
+            spec: 'go to x: %n y: %n z: %n',
+            defaults: [0, 0, 0]
+        },
         doGotoObject: {
             type: 'command',
             category: 'motion',
@@ -286,6 +292,18 @@ SpriteMorph.prototype.initBlocks = function () {
             type: 'command',
             category: 'motion',
             spec: 'set y to %n',
+            defaults: [0]
+        },
+        changeZPosition: {
+            type: 'command',
+            category: 'motion',
+            spec: 'change z by %n',
+            defaults: [10]
+        },
+        setZPosition: {
+            type: 'command',
+            category: 'motion',
+            spec: 'set z to %n',
             defaults: [0]
         },
         bounceOffEdge: {
@@ -1275,9 +1293,16 @@ SpriteMorph.prototype.init = function (globals) {
 
     this.isDraggable = true;
     this.isDown = false;
-	this.isRendering3D = false;
 
     this.heading = 90;
+
+	// 3D properties
+	this.is3D = false;
+	this.zPosition = 0;
+	this.xRotation = 0; // degrees
+	this.yRotation = 0;
+	this.zRotation = 0;
+
     this.changed();
     this.drawNew();
     this.changed();
@@ -1332,7 +1357,16 @@ SpriteMorph.prototype.setName = function (string) {
     this.version = Date.now();
 };
 
-// SpriteMorph rendering
+// SpriteMorph 2D/3D rendering
+const THREED_DEFAULT_OBJECT_SIZE = 160;
+const THREED_CAMERA_Z_POSITION = 100;
+
+const THREEJS_FIELD_OF_VIEW = 45; // degree
+const THREEJS_CAMERA_Z_POSITION = 10;
+var isShowingSphere = false;
+var isShowingLine = false;
+var debugTranslate = false;
+
 SpriteMorph.prototype.drawNew = function () {
     var myself = this,
         currentCenter = this.center(),
@@ -1358,119 +1392,116 @@ SpriteMorph.prototype.drawNew = function () {
         this.wantsRedraw = true;
         return;
     }
-    facing = this.rotationStyle ? this.heading : 90;
-    if (this.rotationStyle === 2) {
-        facing = 90;
-        if ((this.heading > 180 && (this.heading < 360))
+
+	if (this.costume instanceof Costume3D) {
+		var canvasSize = 
+			(THREED_CAMERA_Z_POSITION / (THREED_CAMERA_Z_POSITION - this.zPosition)) * 
+			THREED_DEFAULT_OBJECT_SIZE,
+			stageScale = this.parent instanceof StageMorph ? this.parent.scale : 1,
+			costumeExtent = new Point(canvasSize, canvasSize).multiplyBy(this.scale * stageScale);
+
+		this.image = newCanvas(costumeExtent);
+		this.silentSetExtent(costumeExtent);
+		this.render3dObject(this.image,	this.costume.url);
+
+		this.setCenter(currentCenter, true); // just me
+
+		// need this for centering
+		this.rotationOffset = new Point(0, 0)
+			.translateBy(new Point(canvasSize / 2, canvasSize / 2))
+			.scaleBy(this.scale * stageScale);		
+
+		this.is3D = true;
+		this.costumeChange = false;
+	}
+	else {
+		facing = this.rotationStyle ? this.heading : 90;
+		if (this.rotationStyle === 2) {
+			facing = 90;
+			if ((this.heading > 180 && (this.heading < 360))
                 || (this.heading < 0 && (this.heading > -180))) {
-            isFlipped = true;
-        }
-    }
-    if (this.costume && !isLoadingCostume) {
-        pic = isFlipped ? this.costume.flipped() : this.costume;
-
-        // determine the rotated costume's bounding box
-        corners = pic.bounds().corners().map(function (point) {
-            return point.rotateBy(
-                radians(facing - 90),
-                myself.costume.center()
-            );
-        });
-        origin = corners[0];
-        corner = corners[0];
-        corners.forEach(function (point) {
-            origin = origin.min(point);
-            corner = corner.max(point);
-        });
-        costumeExtent = origin.corner(corner)
-            .extent().multiplyBy(this.scale * stageScale);
-
-        // determine the new relative origin of the rotated shape
-        shift = new Point(0, 0).rotateBy(
-            radians(-(facing - 90)),
-            pic.center()
-        ).subtract(origin);
-
-		// create a new, adequately dimensioned canvas
-        // and draw the costume on it
-        this.image = newCanvas(costumeExtent);
-        this.silentSetExtent(costumeExtent);
-        ctx = this.image.getContext('2d');
-        ctx.scale(this.scale * stageScale, this.scale * stageScale);
-        ctx.translate(shift.x, shift.y);
-        ctx.rotate(radians(facing - 90));
-
-		if (this.costume instanceof Costume3D) {
-			if (!this.isRendering3D || this.colorChange || this.costumeChange) {
-				this.render3dObject(pic.contents,	// source
-									this.image,		// destination (rotated canvas)
-									this.costume.url);
-				this.isRendering3D = true;
-				this.costumeChange = false;
-			}
-			else {
-				this.update3dObject(pic.contents,	// source
-									this.image );	// destination (rotated canvas)
+				isFlipped = true;
 			}
 		}
-		else {
+		if (this.costume && !isLoadingCostume) {
+			pic = isFlipped ? this.costume.flipped() : this.costume;
+
+			// determine the rotated costume's bounding box
+			corners = pic.bounds().corners().map(function (point) {
+				return point.rotateBy(
+					radians(facing - 90),
+					myself.costume.center()
+				);
+			});
+
+			origin = corners[0];
+			corner = corners[0];
+			corners.forEach(function (point) {
+				origin = origin.min(point);
+				corner = corner.max(point);
+			});
+			costumeExtent = origin.corner(corner)
+				.extent().multiplyBy(this.scale * stageScale);
+
+			// determine the new relative origin of the rotated shape
+			shift = new Point(0, 0).rotateBy(
+				radians(-(facing - 90)),
+				pic.center()
+			).subtract(origin);
+
+			// create a new, adequately dimensioned canvas
+			// and draw the costume on it
+			this.image = newCanvas(costumeExtent);
+			this.silentSetExtent(costumeExtent);
+			ctx = this.image.getContext('2d');
+			ctx.scale(this.scale * stageScale, this.scale * stageScale);
+			ctx.translate(shift.x, shift.y);
+			ctx.rotate(radians(facing - 90));
 			ctx.drawImage(pic.contents, 0, 0);
-			this.isRendering3D = false;
+
+			// adjust my position to the rotation
+			this.setCenter(currentCenter, true); // just me
+
+			// determine my rotation offset
+			this.rotationOffset = shift
+				.translateBy(pic.rotationCenter)
+				.rotateBy(radians(-(facing - 90)), shift)
+				.scaleBy(this.scale * stageScale);
+
+		} else { // 		if (this.costume && !isLoadingCostume) {
+			facing = isFlipped ? -90 : facing;
+			newX = Math.min(
+				Math.max(
+					this.normalExtent.x * this.scale * stageScale,
+					5
+				),
+				1000
+			);
+			this.silentSetExtent(new Point(newX, newX));
+			this.image = newCanvas(this.extent());
+			this.setCenter(currentCenter, true); // just me
+			SpriteMorph.uber.drawNew.call(this, facing);
+			this.rotationOffset = this.extent().divideBy(2);
+			if (isLoadingCostume) { // retry until costume is done loading
+				cst = this.costume;
+				handle = setInterval(
+					function () {
+						myself.wearCostume(cst);
+						clearInterval(handle);
+					},
+					100
+				);
+				return myself.wearCostume(null);
+
+			}
 		}
-
-        // adjust my position to the rotation
-        this.setCenter(currentCenter, true); // just me
-
-        // determine my rotation offset
-        this.rotationOffset = shift
-            .translateBy(pic.rotationCenter)
-            .rotateBy(radians(-(facing - 90)), shift)
-            .scaleBy(this.scale * stageScale);
-    } else {
-        facing = isFlipped ? -90 : facing;
-        newX = Math.min(
-            Math.max(
-                this.normalExtent.x * this.scale * stageScale,
-                5
-            ),
-            1000
-        );
-        this.silentSetExtent(new Point(newX, newX));
-        this.image = newCanvas(this.extent());
-        this.setCenter(currentCenter, true); // just me
-        SpriteMorph.uber.drawNew.call(this, facing);
-        this.rotationOffset = this.extent().divideBy(2);
-        if (isLoadingCostume) { // retry until costume is done loading
-            cst = this.costume;
-            handle = setInterval(
-                function () {
-                    myself.wearCostume(cst);
-                    clearInterval(handle);
-                },
-                100
-            );
-            return myself.wearCostume(null);
-
-        }
-    }
+	} // if (this.costume instanceof Costume3D) {
     this.version = Date.now();
 	
 	this.originalPixels = this.image.getContext('2d').createImageData(this.width(), this.height());
 	this.originalPixels = this.image.getContext('2d').getImageData(0, 0, this.width(), this.height());
-	
-	//Check if color change has been applied earlier in script
-	if(this.colorChange){
-		this.changeCostumeColor(this.costumeColor); // This does not seem to be implemented
-	}
 };
 
-
-// SpriteMorph 3D 
-const THREED_OBJECT_WIDTH = 160;
-const THREED_OBJECT_HEIGHT = 160;
-const THREED_FIELD_OF_VIEW = 45; // degree
-const THREED_Z_DIST_TO_OBJECT = 10;
-var isShowingSphere = false;
 
 SpriteMorph.prototype.compute3dScale = function(geometry, fov, dist, aspect) {
 	// see: http://stackoverflow.com/questions/13350875/three-js-width-of-view/13351534#13351534
@@ -1483,17 +1514,19 @@ SpriteMorph.prototype.compute3dScale = function(geometry, fov, dist, aspect) {
 }
 
 
-SpriteMorph.prototype.render3dObject = function (srcCanvas, dstCanvas, url) {
+SpriteMorph.prototype.render3dObject = function (aCanvas, url) {
+	console.time('render3dObject');
+
 	var myself = this,
-	width = srcCanvas.width, height = srcCanvas.height,
+	width = aCanvas.width, height = aCanvas.height,
 	loader = new THREE.JSONLoader();
 
 	this.scene = new THREE.Scene();
-	this.camera = new THREE.PerspectiveCamera(THREED_FIELD_OF_VIEW, width/height, 0.1, 1000);
-	this.camera.position.z = THREED_Z_DIST_TO_OBJECT;
+	this.camera = new THREE.PerspectiveCamera(THREEJS_FIELD_OF_VIEW, width/height, 0.1, 1000);
+	this.camera.position.z = THREEJS_CAMERA_Z_POSITION;
 	this.scene.add(this.camera);
 
-	this.renderer = new THREE.CanvasRenderer({canvas: srcCanvas});
+	this.renderer = new THREE.CanvasRenderer({canvas: aCanvas});
 	this.renderer.setSize(width, height);
 
 	// load 3D geometry from the url
@@ -1502,7 +1535,7 @@ SpriteMorph.prototype.render3dObject = function (srcCanvas, dstCanvas, url) {
 
 		// compute a proper scaling factor and the center of the geometry
 		var results = myself.compute3dScale( geometry, 
-									 THREED_FIELD_OF_VIEW, THREED_Z_DIST_TO_OBJECT,
+									 THREEJS_FIELD_OF_VIEW, THREEJS_CAMERA_Z_POSITION,
 									 width/height );
 		var scale = results[0], sphere = results[1];
 
@@ -1516,18 +1549,35 @@ SpriteMorph.prototype.render3dObject = function (srcCanvas, dstCanvas, url) {
 		myself.object = new THREE.Object3D();
 		myself.object.add( mesh );
 		myself.object.scale.set( scale, scale, scale );
+		myself.object.rotation.x = radians(myself.xRotation);
+		myself.object.rotation.y = radians(myself.yRotation);
+		myself.object.rotation.z = radians(myself.zRotation);
 		myself.scene.add(myself.object);
 
 		// create a sphere for debug purpose
 		if (isShowingSphere) {
 			var sphereGeometry = new THREE.SphereGeometry(sphere.radius, 32, 32);
-			var sphereMmaterial = new THREE.MeshBasicMaterial( {color: 0xcccccc, 
+			var sphereMaterial = new THREE.MeshBasicMaterial( {color: 0xcccccc, 
 																wireframe: true,
 																transparent: true,
 																opacity: 0.3 } );
-			var sphereMesh = new THREE.Mesh(sphereGeometry, sphereMmaterial);
+			var sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
 			sphereMesh.scale.set( scale, scale, scale );
 			myself.scene.add(sphereMesh);
+		}
+
+		if (isShowingLine) {
+			var lineGeometry = new THREE.Geometry();
+			var array = lineGeometry.vertices;
+			// array.push( new THREE.Vector3(-15, -10, 0), new THREE.Vector3(-15, 10, 0) );
+			array.push( new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 10));
+			console.log( "sphere.radius: " + sphere.radius );
+			// array.push( new THREE.Vector3(15, -10, 0), new THREE.Vector3(15, 10, 0) );
+			// lineGeometry.vertices.push(new THREE.Vector3(0, 0, 0));
+			// lineGeometry.vertices.push(new THREE.Vector3(0, 0, sphere.radius));
+			var lineMaterial = new THREE.LineDashedMaterial({color:0xff0000, linewidth:5});
+			myself.line = new THREE.Line(lineGeometry, lineMaterial);
+			myself.scene.add(myself.line);
 		}
 
 		// create a point light
@@ -1538,7 +1588,7 @@ SpriteMorph.prototype.render3dObject = function (srcCanvas, dstCanvas, url) {
 		myself.scene.add(pointLight);
 
 		var isWarped = this.isWarped,
-		context = srcCanvas.getContext('2d');
+		context = aCanvas.getContext('2d');
 		if (isWarped) {
 			myself.endWarp();
 		}
@@ -1546,39 +1596,40 @@ SpriteMorph.prototype.render3dObject = function (srcCanvas, dstCanvas, url) {
 
 		myself.renderer.render(myself.scene, myself.camera);
 
-		// project the rendered 3D object to the destination canvas
-		// NOTE: it is important to do this here because so in drawNew() does not work due to timing
-		var context2 = dstCanvas.getContext('2d');
-		context2.drawImage(srcCanvas, 0, 0);  
-
 		context.restore();
 		myself.changed();
 		if (isWarped) {
 			myself.startWarp();
 		}
 
+	console.timeEnd('render3dObject');
     } );
 }
 
 
-SpriteMorph.prototype.update3dObject = function (srcCanvas, dstCanvas) {
-	var context = srcCanvas.getContext('2d'),
+SpriteMorph.prototype.update3dObject = function () {
+	console.time('update3dObject');
+
+	var context = this.image.getContext('2d'),
 	isWarped = this.isWarped;
 	if (isWarped) {
 		this.endWarp();
 	}
     context.save();
 	
+	context.clearRect(0, 0, this.image.width, this.image.height);
+	this.object.rotation.x = radians(this.xRotation);
+	this.object.rotation.y = radians(this.yRotation);
+	this.object.rotation.z = radians(this.zRotation);
 	this.renderer.render(this.scene, this.camera);
-
-	var context2 = dstCanvas.getContext('2d');
-	context2.drawImage(srcCanvas, 0, 0);  
 
 	context.restore();
 	this.changed();
 	if (isWarped) {
 		this.startWarp();
 	}
+
+	console.timeEnd('update3dObject');
 }	
 
 
@@ -1744,33 +1795,39 @@ SpriteMorph.prototype.blockTemplates = function (category) {
     }
 
     if (cat === 'motion') {
-
-        blocks.push(block('forward'));
-        blocks.push(block('turn'));
-        blocks.push(block('turnLeft'));
-		blocks.push(block('turn3D'));
-        blocks.push('-');
-        blocks.push(block('setHeading'));
-        blocks.push(block('doFaceTowards'));
-		blocks.push(block('point3D'));
-        blocks.push('-');
-        blocks.push(block('gotoXY'));
-        blocks.push(block('doGotoObject'));
-        blocks.push(block('doGlide'));
-        blocks.push('-');
-        blocks.push(block('changeXPosition'));
-        blocks.push(block('setXPosition'));
-        blocks.push(block('changeYPosition'));
-        blocks.push(block('setYPosition'));
-        blocks.push('-');
-        blocks.push(block('bounceOffEdge'));
-        blocks.push('-');
-        blocks.push(watcherToggle('xPosition'));
-        blocks.push(block('xPosition'));
-        blocks.push(watcherToggle('yPosition'));
-        blocks.push(block('yPosition'));
-        blocks.push(watcherToggle('direction'));
-        blocks.push(block('direction'));
+		// if (this.costume instanceof Costume3D) {
+		// }
+		// else {
+			blocks.push(block('forward'));
+			blocks.push(block('turn'));
+			blocks.push(block('turnLeft'));
+			blocks.push(block('turn3D'));
+			blocks.push('-');
+			blocks.push(block('setHeading'));
+			blocks.push(block('doFaceTowards'));
+			blocks.push(block('point3D'));
+			blocks.push('-');
+			blocks.push(block('gotoXY'));
+			blocks.push(block('gotoXYZ'));
+			blocks.push(block('doGotoObject'));
+			blocks.push(block('doGlide'));
+			blocks.push('-');
+			blocks.push(block('changeXPosition'));
+			blocks.push(block('setXPosition'));
+			blocks.push(block('changeYPosition'));
+			blocks.push(block('setYPosition'));
+			blocks.push(block('changeZPosition'));
+			blocks.push(block('setZPosition'));
+			blocks.push('-');
+			blocks.push(block('bounceOffEdge'));
+			blocks.push('-');
+			blocks.push(watcherToggle('xPosition'));
+			blocks.push(block('xPosition'));
+			blocks.push(watcherToggle('yPosition'));
+			blocks.push(block('yPosition'));
+			blocks.push(watcherToggle('direction'));
+			blocks.push(block('direction'));
+		// }
 
     } else if (cat === 'looks') {
 
@@ -2774,7 +2831,7 @@ SpriteMorph.prototype.doStamp = function () {
 // SpriteMorph 3D experiment
 
 // SpriteMorph.prototype.step = function () {
-// 	if (this.isRendering3D) {
+// 	if (this.is3D) {
 // 		var canvas = this.image,
 // 		// canvas = stage.penTrails(),
 // 		context = canvas.getContext('2d'),
@@ -3179,11 +3236,12 @@ SpriteMorph.prototype.faceToXY = function (x, y) {
 };
 
 SpriteMorph.prototype.point3D = function (degX, degY, degZ) {
-	if (this.isRendering3D) {
-		this.object.rotation.x = radians(degX);
-		this.object.rotation.y = radians(degY);
-		this.object.rotation.z = radians(degZ);
-		this.drawNew();
+	if (this.is3D) {
+		this.xRotation = degX;
+		this.yRotation = degY;
+		this.zRotation = degZ;
+
+		this.update3dObject();
 	}
 
 	// propagate to my parts
@@ -3201,11 +3259,18 @@ SpriteMorph.prototype.turnLeft = function (degrees) {
 };
 
 SpriteMorph.prototype.turn3D = function (degX, degY, degZ) {
-	if (this.isRendering3D) {
-		this.object.rotation.x += radians(degX);
-		this.object.rotation.y += radians(degY);
-		this.object.rotation.z += radians(degZ);
-		this.drawNew();
+	if (this.is3D) {
+		this.xRotation += degX;
+		this.yRotation += degY;
+		this.zRotation += degZ;
+
+		if (isShowingLine) {
+			this.line.rotation.x += radians(degX);
+			this.line.rotation.y += radians(degY);
+			this.line.rotation.z += radians(degZ);
+		}
+
+		this.update3dObject();
 	}
 
 	// propagate to my parts
@@ -3263,6 +3328,26 @@ SpriteMorph.prototype.gotoXY = function (x, y, justMe) {
     this.positionTalkBubble();
 };
 
+SpriteMorph.prototype.gotoXYZ = function (x, y, z, justMe) {
+    var stage = this.parentThatIsA(StageMorph),
+        newX,
+        newY,
+        dest;
+
+	this.zPosition = z;
+	this.drawNew();
+
+    newX = stage.center().x + (+x || 0) * stage.scale;
+    newY = stage.center().y - (+y || 0) * stage.scale;
+    if (this.costume) {
+        dest = new Point(newX, newY).subtract(this.rotationOffset);
+    } else {
+        dest = new Point(newX, newY).subtract(this.extent().divideBy(2));
+    }
+    this.setPosition(dest, justMe);
+    this.positionTalkBubble();
+};
+
 SpriteMorph.prototype.silentGotoXY = function (x, y, justMe) {
     // move without drawing
     var penState = this.isDown;
@@ -3285,6 +3370,14 @@ SpriteMorph.prototype.setYPosition = function (num) {
 
 SpriteMorph.prototype.changeYPosition = function (delta) {
     this.setYPosition(this.yPosition() + (+delta || 0));
+};
+
+SpriteMorph.prototype.setZPosition = function (num) {
+    this.gotoXYZ(this.xPosition(), this.yPosition(), +num || 0);
+};
+
+SpriteMorph.prototype.changeZPosition = function (delta) {
+    this.setZPosition(this.zPosition + (+delta || 0));
 };
 
 SpriteMorph.prototype.glide = function (
@@ -4149,7 +4242,7 @@ StageMorph.prototype.setScale = function (number) {
 
     // now move and resize all children - sprites, bubbles, watchers etc..
     this.children.forEach(function (morph) {
-        relativePos = morph.position().subtract(pos);
+        relativePos = morpGh.position().subtract(pos);
         morph.drawNew();
         morph.setPosition(
             relativePos.multiplyBy(delta).add(pos),

@@ -1692,6 +1692,138 @@ Point.prototype.asArray = function () {
     return [this.x, this.y];
 };
 
+// Point3D //////////////////////////////////////////////////////////////
+
+// Point3D instance creation:
+
+function Point3D(x, y, z) {
+    this.x = x || 0;
+    this.y = y || 0;
+    this.z = z || 0;
+}
+
+// Point3D string representation: e.g. '12@68@10'
+
+Point3D.prototype.toString = function () {
+    return Math.round(this.x.toString()) +
+        '@' + Math.round(this.y.toString()) +
+        '@' + Math.round(this.z.toString());
+};
+
+// Point3D copying:
+
+Point3D.prototype.copy = function () {
+    return new Point3D(this.x, this.y, this.z);
+};
+
+// Point3D arithmetic:
+
+Point3D.prototype.add = function (other) {
+    if (other instanceof Point3D) {
+        return new Point3D(this.x + other.x, this.y + other.y, this.z + other.z);
+    }
+    return new Point3D(this.x + other, this.y + other, this.z + other);
+};
+
+Point3D.prototype.subtract = function (other) {
+    if (other instanceof Point3D) {
+        return new Point3D(this.x - other.x, this.y - other.y, this.z - other.z);
+    }
+    return new Point3D(this.x - other, this.y - other, this.z - other);
+};
+
+Point3D.prototype.multiplyBy = function (other) {
+    if (other instanceof Point3D) {
+        return new Point3D(this.x * other.x, this.y * other.y, this.z * other.z);
+    }
+    return new Point3D(this.x * other, this.y * other, this.z * other);
+};
+
+Point3D.prototype.divideBy = function (other) {
+    if (other instanceof Point3D) {
+        return new Point3D(this.x / other.x, this.y / other.y, this.z / other.z);
+    }
+    return new Point3D(this.x / other, this.y / other, this.z / other);
+};
+
+Point3D.prototype.floorDivideBy = function (other) {
+    if (other instanceof Point3D) {
+        return new Point3D(Math.floor(this.x / other.x),
+						   Math.floor(this.y / other.y),
+						   Math.floor(this.z / other.z));
+    }
+    return new Point3D(Math.floor(this.x / other),
+					   Math.floor(this.y / other),
+					   Math.floor(this.z / other));
+};
+
+// Point3D transforming:
+
+Point3D.prototype.scaleBy = function (scalePoint) {
+    return this.multiplyBy(scalePoint);
+};
+
+Point3D.prototype.translateBy = function (deltaPoint) {
+    return this.add(deltaPoint);
+};
+
+
+Point3D.prototype.rotateBy = function (angleX, angleY, angleZ, centerPoint) {
+	// angles are in radians
+	var center = centerPoint || new Point3D(0, 0, 0),
+		p = this.subtract(center), rotatedP,
+		rotMatrix = [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+		multiplyMatrix = function(A, B) {
+			if (A[0].length != B.length) {
+				return null;
+			}
+			var i, j, k, l = A.length, m = A[0].length, n = B[0].length, C = new Array();
+
+			for (i = 0; i < l; i++) {
+				C[i] = new Array();
+				for (j = 0; j < n; j++) {
+					C[i][j] = 0;
+					for (k = 0; k < m; k++) {
+						C[i][j] += A[i][k] * B[k][j];
+					}
+				}
+			}
+			return C;
+		}
+	
+	
+	if (angleX % Math.PI != 0) {
+		rotMatrix = [[1, 0, 0], 
+					 [0, Math.cos(angleX), -1 * Math.sin(angleX)],
+					 [0, Math.sin(angleX), Math.cos(angleX)]];
+	}
+	if (angleY % Math.PI != 0) {
+		rotY_Matrix = [[Math.cos(angleY), 0, Math.sin(angleY)],
+					   [0, 1, 0],
+					   [-1 * Math.sin(angleY), 0, Math.cos(angleY)]];
+		rotMatrix = multiplyMatrix(rotMatrix, rotY_Matrix);
+	}
+	if (angleZ % Math.PI != 0) {
+		rotZ_Matrix = [[Math.cos(angleZ), -1 * Math.sin(angleZ), 0],
+					   [Math.sin(angleZ), Math.cos(angleZ), 0],
+					   [0, 0, 1]];
+		rotMatrix = multiplyMatrix(rotMatrix, rotZ_Matrix);
+	}
+
+	rotatedP = multiplyMatrix(rotMatrix, [[p.x], [p.y], [p.z]]);
+
+	return new Point3D(
+		center.x - (-rotatedP[0]), 
+		center.y - (-rotatedP[1]),
+		center.z - (-rotatedP[2]));
+};
+
+// Point conversion:
+
+Point3D.prototype.asArray = function () {
+    return [this.x, this.y, this.z];
+};
+
 // Rectangles //////////////////////////////////////////////////////////
 
 // Rectangle instance creation:

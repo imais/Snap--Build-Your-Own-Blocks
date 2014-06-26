@@ -3283,7 +3283,10 @@ SpriteMorph.prototype.turnLeft = function (degrees) {
 };
 
 SpriteMorph.prototype.turn3D = function (degX, degY, degZ) {
-	if (this.is3D) {
+	if (this.is3D && this.parts) {
+		this.turn3dWithNesting(degX, degY, degZ);
+	}
+	else if (this.is3D && !this.parts) {
 		this.xRotation += degX;
 		this.yRotation += degY;
 		this.zRotation += degZ;
@@ -3296,12 +3299,30 @@ SpriteMorph.prototype.turn3D = function (degX, degY, degZ) {
 
 		this.update3dObject();
 	}
-
-	// propagate to my parts
-	this.parts.forEach(function (part) {
-		part.turn3D(degX, degY, degZ);
-	});
 };
+
+SpriteMorph.prototype.turn3dWithNesting = function (degX, degY, degZ) {
+	var sum = new Point3D(this.xPosition(), this.yPosition(), this.zPosition),
+		center, p, newP;
+
+	this.parts.forEach(function (part) {
+		sum = sum.add(new Point3D(part.xPosition(), part.yPosition(), part.zPosition));
+	});
+	center = sum.divideBy(this.parts.length + 1);
+
+	p = new Point3D(this.xPosition(), this.yPosition(), this.zPosition);
+	newP = p.rotateBy(radians(degX), radians(degY), radians(degZ), center);
+	// console.log( p + " --> " + newP);
+	this.gotoXYZ(newP.x, newP.y, newP.z, true /* justme */);
+
+	this.parts.forEach(function (part) {
+		p = new Point3D(part.xPosition(), part.yPosition(), part.zPosition);
+		newP = p.rotateBy(radians(degX), radians(degY), radians(degZ), center);
+		// console.log( p + " --> " + newP);
+		part.gotoXYZ(newP.x, newP.y, newP.z, true /* justme */);
+	});
+}
+
 
 SpriteMorph.prototype.xPosition = function () {
 	var stage = this.parentThatIsA(StageMorph);

@@ -1643,6 +1643,10 @@ SpriteMorph.prototype.update3dObject = function () {
 	this.object.rotation.x = radians(this.xRotation);
 	this.object.rotation.y = radians(this.yRotation);
 	this.object.rotation.z = radians(this.zRotation);
+	console.log("rotation (x,y,z)=(" + 
+				this.xRotation + ", " + 
+				this.yRotation + ", " + 
+				this.zRotation + ")");
 	this.renderer.render(this.scene, this.camera);
 
 	context.restore();
@@ -3283,10 +3287,10 @@ SpriteMorph.prototype.turnLeft = function (degrees) {
 };
 
 SpriteMorph.prototype.turn3D = function (degX, degY, degZ) {
-	if (this.is3D && this.parts) {
+	if (this.is3D && (0 < this.parts.length)) {
 		this.turn3dWithNesting(degX, degY, degZ);
 	}
-	else if (this.is3D && !this.parts) {
+	else if (this.is3D && (this.parts.length == 0)) {
 		this.xRotation += degX;
 		this.yRotation += degY;
 		this.zRotation += degZ;
@@ -3301,6 +3305,21 @@ SpriteMorph.prototype.turn3D = function (degX, degY, degZ) {
 	}
 };
 
+SpriteMorph.prototype.lookAt = function(point, target) {
+	var dx = point.x - target.x,
+		dy = point.y - target.y,
+		dz = point.z - target.z,
+		rotx, roty, rotz;
+
+	rotx = Math.atan2(dy, dz);
+	roty = Math.atan2(dx * Math.cos(rotx), dz);
+	rotz = Math.atan2(Math.cos(rotx), Math.sin(rotx) * Math.sin(roty));
+
+	this.xRotation += degrees(rotx);
+	this.yRotation += degrees(roty);
+	this.zRotation += degrees(rotz);
+}
+
 SpriteMorph.prototype.turn3dWithNesting = function (degX, degY, degZ) {
 	var sum = new Point3D(this.xPosition(), this.yPosition(), this.zPosition),
 		center, p, newP;
@@ -3310,15 +3329,25 @@ SpriteMorph.prototype.turn3dWithNesting = function (degX, degY, degZ) {
 	});
 	center = sum.divideBy(this.parts.length + 1);
 
+	// translate myself first
 	p = new Point3D(this.xPosition(), this.yPosition(), this.zPosition);
 	newP = p.rotateBy(radians(degX), radians(degY), radians(degZ), center);
 	// console.log( p + " --> " + newP);
+	this.xRotation += degX;
+	this.yRotation += degY;
+	this.zRotation += degZ;
+	// this.lookAt(newP, center);
 	this.gotoXYZ(newP.x, newP.y, newP.z, true /* justme */);
 
+	// then my parts
 	this.parts.forEach(function (part) {
 		p = new Point3D(part.xPosition(), part.yPosition(), part.zPosition);
 		newP = p.rotateBy(radians(degX), radians(degY), radians(degZ), center);
 		// console.log( p + " --> " + newP);
+		part.xRotation += degX;
+		part.yRotation += degY;
+		part.zRotation += degZ;
+		// part.lookAt(newP, center);
 		part.gotoXYZ(newP.x, newP.y, newP.z, true /* justme */);
 	});
 }
@@ -3387,6 +3416,7 @@ SpriteMorph.prototype.gotoXYZ = function (x, y, z, justMe) {
 	this.zPosition = z;
 	this.drawNew();
 
+	// added for Z-axis ordering
 	if (this.parent) {
 		this.parent.children.sort(
 			function(a, b) {

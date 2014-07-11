@@ -223,6 +223,12 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: 'turn %counterclockwise %n degrees',
             defaults: [15]
         },
+		turn3D: {
+			type: 'command',
+			category: 'motion',
+			spec: 'turn x: %n y: %n z: %n degrees',
+			defaults: [0, 0, 0]
+		},
         setHeading: {
             type: 'command',
             category: 'motion',
@@ -233,12 +239,24 @@ SpriteMorph.prototype.initBlocks = function () {
             category: 'motion',
             spec: 'point towards %dst'
         },
+		point3D: {
+			type: 'command',
+			category: 'motion',
+			spec: 'point x: %n y: %n z: %n degrees',
+			defaults: [0, 0, 0]
+		},
         gotoXY: {
             type: 'command',
             category: 'motion',
             spec: 'go to x: %n y: %n',
             defaults: [0, 0]
         },
+		gotoXYZ: {
+			type: 'command',
+			category: 'motion',
+			spec: 'go to x: %n y: %n z: %n',
+			defaults: [0, 0, 0]
+		},
         doGotoObject: {
             type: 'command',
             category: 'motion',
@@ -274,6 +292,18 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: 'set y to %n',
             defaults: [0]
         },
+		changeZPosition: {
+			type: 'command',
+			category: 'motion',
+			spec: 'change z by %n',
+			defaults: [10]
+		},
+		setZPosition: {
+			type: 'command',
+			category: 'motion',
+			spec: 'set z to %n',
+			defaults: [0]
+		},
         bounceOffEdge: {
             type: 'command',
             category: 'motion',
@@ -289,6 +319,11 @@ SpriteMorph.prototype.initBlocks = function () {
             category: 'motion',
             spec: 'y position'
         },
+		zPosition: {
+			type: 'reporter',
+			category: 'motion',
+			spec: 'z position'
+		},
         direction: {
             type: 'reporter',
             category: 'motion',
@@ -1602,11 +1637,14 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('forward'));
         blocks.push(block('turn'));
         blocks.push(block('turnLeft'));
+        blocks.push(block('turn3D'));
         blocks.push('-');
         blocks.push(block('setHeading'));
         blocks.push(block('doFaceTowards'));
+		blocks.push(block('point3D'));
         blocks.push('-');
         blocks.push(block('gotoXY'));
+		blocks.push(block('gotoXYZ'));
         blocks.push(block('doGotoObject'));
         blocks.push(block('doGlide'));
         blocks.push('-');
@@ -1614,6 +1652,8 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('setXPosition'));
         blocks.push(block('changeYPosition'));
         blocks.push(block('setYPosition'));
+		blocks.push(block('changeZPosition'));
+		blocks.push(block('setZPosition'));
         blocks.push('-');
         blocks.push(block('bounceOffEdge'));
         blocks.push('-');
@@ -1621,6 +1661,8 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('xPosition'));
         blocks.push(watcherToggle('yPosition'));
         blocks.push(block('yPosition'));
+		blocks.push(watcherToggle('zPosition'));
+		blocks.push(block('zPosition'));
         blocks.push(watcherToggle('direction'));
         blocks.push(block('direction'));
 
@@ -2971,12 +3013,30 @@ SpriteMorph.prototype.faceToXY = function (x, y) {
     this.setHeading(angle + 90);
 };
 
+SpriteMorph.prototype.point3D = function (degX, degY, degZ) {
+	if (this.costume instanceof Costume3D) {
+		this.object.rotation.x = radians(degX);
+		this.object.rotation.y = radians(degY);
+		this.object.rotation.z = radians(degZ);
+		this.parent.changed();
+	}
+}
+
 SpriteMorph.prototype.turn = function (degrees) {
     this.setHeading(this.heading + (+degrees || 0));
 };
 
 SpriteMorph.prototype.turnLeft = function (degrees) {
     this.setHeading(this.heading - (+degrees || 0));
+};
+
+SpriteMorph.prototype.turn3D = function (degX, degY, degZ) {
+	if (this.costume instanceof Costume3D) {
+		this.object.rotation.x += radians(degX);
+		this.object.rotation.y += radians(degY);
+		this.object.rotation.z += radians(degZ);
+		this.parent.changed();
+	}
 };
 
 SpriteMorph.prototype.xPosition = function () {
@@ -3028,6 +3088,18 @@ SpriteMorph.prototype.gotoXY = function (x, y, justMe) {
     this.positionTalkBubble();
 };
 
+SpriteMorph.prototype.gotoXYZ = function (x, y, z, justMe) {
+	if (this.costume instanceof Costume3D) {
+		this.setXPosition(x);
+		this.setYPosition(y);
+
+		this.object.position.x = x;
+		this.object.position.y = y;
+		this.object.position.z = z;
+		this.parent.changed();
+	}
+}
+
 SpriteMorph.prototype.silentGotoXY = function (x, y, justMe) {
     // move without drawing
     var penState = this.isDown;
@@ -3037,19 +3109,53 @@ SpriteMorph.prototype.silentGotoXY = function (x, y, justMe) {
 };
 
 SpriteMorph.prototype.setXPosition = function (num) {
-    this.gotoXY(+num || 0, this.yPosition());
+	this.gotoXY(+num || 0, this.yPosition());
+
+	if (this.costume instanceof Costume3D) {
+		this.object.position.x = num;
+		this.parent.changed();
+	}
 };
 
 SpriteMorph.prototype.changeXPosition = function (delta) {
     this.setXPosition(this.xPosition() + (+delta || 0));
+
+	if (this.costume instanceof Costume3D) {
+		this.object.position.x += delta;
+		this.parent.changed();
+	}
 };
 
 SpriteMorph.prototype.setYPosition = function (num) {
-    this.gotoXY(this.xPosition(), +num || 0);
+    this.gotoXY(this.yPosition(), +num || 0);
+
+	if (this.costume instanceof Costume3D) {
+		this.object.position.y = num;
+		this.parent.changed();
+	}
 };
 
 SpriteMorph.prototype.changeYPosition = function (delta) {
     this.setYPosition(this.yPosition() + (+delta || 0));
+
+	if (this.costume instanceof Costume3D) {
+		this.object.position.y += num;
+		this.parent.changed();
+	}
+};
+
+SpriteMorph.prototype.setZPosition = function (num) {
+	if (this.costume instanceof Costume3D) {
+		this.object.position.z = num;
+		this.parent.changed();
+	}
+};
+
+SpriteMorph.prototype.changeZPosition = function (delta) {
+	if (this.costume instanceof Costume3D) {
+		this.object.position.z += delta;
+		this.parent.changed();
+	}
 };
 
 SpriteMorph.prototype.glide = function (
@@ -3960,7 +4066,6 @@ StageMorph.prototype.drawNew = function () {
     }
 };
 
-var isShowingScene = false;
 StageMorph.prototype.drawOn = function (aCanvas, aRect) {
 	// console.time('StageMorph.drawOn');
 	// console.profile('StageMorph.drawOn');
@@ -4009,22 +4114,6 @@ StageMorph.prototype.drawOn = function (aCanvas, aRect) {
 		// console.time('StageMorph renderer');
 		this.renderer.render(this.scene, this.camera);
 		// console.timeEnd('StageMorph renderer');
-
-		// DEBUG BEGIN: open a new window for the image
-		if (isShowingScene) {
-			var imgWin = window.open( "./image.html", null,"scrollbars=no,resizable=no,menubar=no,toolbar=no,location=no,directories=no,status=no" );
-
-			imgWin.onload = function () {
-				// below has to be executed in onload(), otherwise an image element will be null
-				var dstCanvas = imgWin.document.getElementById( "debug-image" );
-				var imageCtx = srcCanvas.getContext("2d");
-				var srcCanvas = this.get3dCanvas();
-				imageCtx.drawImage(srcCanvas, 0, 0, srcCanvas.width, srcCanvas.height);
-				console.log( "srcCanvas.width: " + srcCanvas.width + 
-							 ", srcCanvas.height: " + srcCanvas.height );
-			}
-		}
-		// DEBUG END
 
 		// console.time('StageMorph drawImage - 3D');
         context.drawImage(

@@ -1,5 +1,4 @@
 /*
-
     objects.js
 
     a scriptable microworld
@@ -1332,8 +1331,13 @@ SpriteMorph.prototype.drawNew = function () {
         costumeExtent,
         ctx,
         handle;
-		
-	
+
+	if (this.costume instanceof Costume3D) {
+		// the 3D object will be rendered in StageMorph.drawOn() later
+		this.hide();
+		return;
+	}
+
     if (this.isWarped) {
         this.wantsRedraw = true;
         return;
@@ -1475,6 +1479,11 @@ SpriteMorph.prototype.colorFiltered = function (aColor) {
     ctx.putImageData(dta, 0, 0);
     return morph;
 };
+
+// SpriteMorph 3D rendering
+SpriteMorph.load3dCostume = function (costume) {
+	
+}
 
 // SpriteMorph block instantiation
 
@@ -2262,6 +2271,32 @@ SpriteMorph.prototype.addCostume = function (costume) {
 };
 
 SpriteMorph.prototype.wearCostume = function (costume) {
+
+	if (costume instanceof Costume3D) {
+		var loader = new THREE.JSONLoader(), myself = this;
+		loader.load(costume.url, function(geometry) { 
+			var color = new THREE.Color(myself.color.r/255, myself.color.g/255, myself.color.b/255);
+			var mesh = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial({color: color}) );
+			var sphere = geometry.boundingSphere; // THREE.Sphere	
+			mesh.position.set( -sphere.center.x, -sphere.center.y, -sphere.center.z );
+
+			myself.object = new THREE.Object3D();
+			myself.object.add( mesh );
+			// myself.object.scale.set(0.2, 0.2, 0.2);
+			myself.object.position.x = myself.xPosition();
+			myself.object.position.y = myself.yPosition();
+			myself.object.position.z = 0;
+
+			myself.hide();  // hide the 2D image
+			myself.parent.scene.add(myself.object);
+			myself.parent.changed();
+			// console.log("[" + Date.now() + "] 3D costume finished loading!" );
+		});
+
+		this.costume = costume;
+		return;
+	}
+
     var x = this.xPosition ? this.xPosition() : null,
         y = this.yPosition ? this.yPosition() : null,
         isWarped = this.isWarped;
@@ -3859,6 +3894,10 @@ StageMorph.prototype.init = function (globals) {
     this.acceptsDrops = false;
     this.setColor(new Color(255, 255, 255));
     this.fps = this.frameRate;
+
+	// 3D
+	this.threedCanvas = null;
+	this.init3D();
 };
 
 // StageMorph scaling
@@ -3921,8 +3960,12 @@ StageMorph.prototype.drawNew = function () {
     }
 };
 
+var isShowingScene = false;
 StageMorph.prototype.drawOn = function (aCanvas, aRect) {
-    // make sure to draw the pen trails canvas as well
+	// console.time('StageMorph.drawOn');
+	// console.profile('StageMorph.drawOn');
+
+    // make sure to draw the 3D objects and pen trails canvases as well
     var rectangle, area, delta, src, context, w, h, sl, st, ws, hs;
     if (!this.isVisible) {
         return null;
@@ -3943,6 +3986,7 @@ StageMorph.prototype.drawOn = function (aCanvas, aRect) {
         if (w < 1 || h < 1) {
             return null;
         }
+		// console.time('StageMorph drawImage - image');
         context.drawImage(
             this.image,
             src.left(),
@@ -3954,12 +3998,50 @@ StageMorph.prototype.drawOn = function (aCanvas, aRect) {
             w,
             h
         );
+		// console.timeEnd('StageMorph drawImage - image');
 
-        // pen trails
         ws = w / this.scale;
         hs = h / this.scale;
         context.save();
         context.scale(this.scale, this.scale);
+        // 3d
+		// console.log("[" + Date.now() + "] StageMorph.drawOn()" );
+		// console.time('StageMorph renderer');
+		this.renderer.render(this.scene, this.camera);
+		// console.timeEnd('StageMorph renderer');
+
+		// DEBUG BEGIN: open a new window for the image
+		if (isShowingScene) {
+			var imgWin = window.open( "./image.html", null,"scrollbars=no,resizable=no,menubar=no,toolbar=no,location=no,directories=no,status=no" );
+
+			imgWin.onload = function () {
+				// below has to be executed in onload(), otherwise an image element will be null
+				var dstCanvas = imgWin.document.getElementById( "debug-image" );
+				var imageCtx = srcCanvas.getContext("2d");
+				var srcCanvas = this.get3dCanvas();
+				imageCtx.drawImage(srcCanvas, 0, 0, srcCanvas.width, srcCanvas.height);
+				console.log( "srcCanvas.width: " + srcCanvas.width + 
+							 ", srcCanvas.height: " + srcCanvas.height );
+			}
+		}
+		// DEBUG END
+
+		// console.time('StageMorph drawImage - 3D');
+        context.drawImage(
+            this.get3dCanvas(),
+            src.left() / this.scale,
+            src.top() / this.scale,
+            ws,
+            hs,
+            area.left() / this.scale,
+            area.top() / this.scale,
+            ws,
+            hs
+        );
+		// console.timeEnd('StageMorph drawImage - 3D');
+
+        // pen trails
+		// console.time('StageMorph drawImage - pen');
         context.drawImage(
             this.penTrails(),
             src.left() / this.scale,
@@ -3972,7 +4054,10 @@ StageMorph.prototype.drawOn = function (aCanvas, aRect) {
             hs
         );
         context.restore();
+		// console.timeEnd('StageMorph drawImage - pen');
     }
+
+	// console.timeEnd('StageMorph.drawOn');
 };
 
 StageMorph.prototype.clearPenTrails = function () {
@@ -4043,6 +4128,61 @@ StageMorph.prototype.colorFiltered = function (aColor, excludedSprite) {
     ctx.putImageData(dta, 0, 0);
     return morph;
 };
+
+// StageMorph 3D rendering
+const THREEJS_FIELD_OF_VIEW = 45; // degree
+const THREEJS_CAMERA_Z_POSITION = 300;
+
+StageMorph.prototype.init3D = function () {
+	var canvas = this.get3dCanvas();
+
+	// var vFOV = 2 * Math.atan(canvas.height / (2 * THREEJS_CAMERA_Z_POSITION));
+	var vFOV = THREEJS_FIELD_OF_VIEW;
+	// var dist = canvas.height / (2 * Math.tan(radians(vFOV) / 2));
+	var dist = THREEJS_CAMERA_Z_POSITION;
+	console.log("vFOV=" + vFOV + ", dist=" + dist);
+	var height = 2 * Math.tan(radians(vFOV / 2)) * dist;
+	var width = (canvas.width / canvas.height) * height;
+	console.log( "width=" + width + ", height=" + height);
+
+	this.scene = new THREE.Scene();
+
+	// camera
+	this.camera = new THREE.PerspectiveCamera(vFOV,
+											  canvas.width / canvas.height, 0.1, 1000);
+	this.camera.position.z = THREEJS_CAMERA_Z_POSITION;
+	this.scene.add(this.camera);
+
+	// lighting
+	this.light = new THREE.PointLight( 0xFFFFFF );
+	this.light.position.x = 50;
+	this.light.position.y = 50;
+	this.light.position.z = 100;
+	this.scene.add(this.light);
+
+	// renderer
+	this.renderer = new THREE.CanvasRenderer({canvas: canvas});
+	this.renderer.setSize(canvas.width, canvas.height);
+}
+
+StageMorph.prototype.get3dCanvas = function () {
+    if (!this.threedCanvas) {
+        this.threedCanvas = newCanvas(this.dimensions);
+    }
+    return this.threedCanvas;
+};
+
+
+StageMorph.prototype.render3dObjects = function () {
+	// this.children.forEach(function(morph) {
+	// 	if (morph.costume instanceof Costume3D) {
+	// 		this.addObject
+	// 	}
+	// }
+}
+
+
+
 
 // StageMorph accessing
 
@@ -5522,6 +5662,44 @@ Costume.prototype.isTainted = function () {
     }
     return false;
 };
+
+
+// Costume3D /////////////////////////////////////////////////////////////
+
+/*
+  I am a costume containing a 3D object
+*/
+
+// Costume3D inherits from Costume:
+
+Costume3D.prototype = new Costume();
+Costume3D.prototype.constructor = Costume3D;
+Costume3D.uber = Costume.prototype;
+
+// Costume3D instance creation
+
+function Costume3D(canvas, name, url, rotationCenter) {
+	this.contents = canvas; // do not create a new canvas here
+	// this.shrinkToFit(this.maxExtent);
+	this.name = name || null;
+	// this.rotationCenter = rotationCenter || this.center();
+	this.version = Date.now(); // for observer optimization
+	this.loaded = null; // for de-serialization only
+	this.url = url;
+}
+
+Costume3D.prototype.toString = function () {
+	return 'a Costume3D(' + this.name + ')';
+};
+
+// Costume3D duplication
+// Costume3D flipping
+// Costume3D thumbnail
+Costume3D.prototype.thumbnail = function (extentPoint) {
+    var trg = newCanvas(extentPoint);
+	return trg;
+}
+
 
 // SVG_Costume /////////////////////////////////////////////////////////////
 

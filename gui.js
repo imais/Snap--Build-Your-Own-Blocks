@@ -1592,6 +1592,22 @@ IDE_Morph.prototype.droppedImage = function (aCanvas, name) {
     this.hasChangedMedia = true;
 };
 
+IDE_Morph.prototype.dropped3dObject = function (aCanvas, name, url) {
+    var costume = new Costume3D(
+        aCanvas,
+        name ? name.split('.')[0] : '', // up to period
+		url
+    );
+
+    this.currentSprite.addCostume(costume);
+    this.currentSprite.wearCostume(costume);
+	// this.currentSprite.freshPalette();
+	// this.palette.changed();
+	// this.palette.drawNew();
+    this.spriteBar.tabBar.tabTo('costumes');
+    this.hasChangedMedia = true;
+};
+
 IDE_Morph.prototype.droppedSVG = function (anImage, name) {
     var costume = new SVG_Costume(anImage, name.split('.')[0]);
     this.currentSprite.addCostume(costume);
@@ -2500,39 +2516,105 @@ IDE_Morph.prototype.projectMenu = function () {
         'show different default scripts'
     );
 
-    menu.addItem(
-        localize(graphicsName) + '...',
-        function () {
-            var dir = graphicsName,
+	if (this.currentSprite instanceof SpriteMorph) {
+		// SpriteMorph
+		menu.addItem(
+			'2D ' + localize(graphicsName) + '...',
+			function () {
+				var dir = graphicsName,
+                names = myself.getCostumesList(dir),
+                libMenu = new MenuMorph(
+                    myself,
+                    localize('Import') + ' ' + '2D ' + localize(graphicsName)
+                );
+
+				function loadCostume(name) {
+					var url = dir + '/' + name,
+                    img = new Image();
+					img.onload = function () {
+						var canvas = newCanvas(new Point(img.width, img.height));
+						canvas.getContext('2d').drawImage(img, 0, 0);
+						myself.droppedImage(canvas, name);
+					};
+					img.src = url;
+				}
+
+				names.forEach(function (line) {
+					if (line.length > 0) {
+						libMenu.addItem(
+							line,
+							function () {loadCostume(line); }
+						);
+					}
+				});
+				libMenu.popup(world, pos);
+			},
+			'Select a 2D costume from the media library'
+		);
+		menu.addItem(
+			'3D ' + localize(graphicsName) + '...',
+			function () {
+				var dir = graphicsName + '3D',
+                names = myself.getCostumesList(dir),
+                libMenu = new MenuMorph(
+                    myself,
+                    localize('Import') + ' ' + '3D ' + localize(graphicsName)
+                );
+
+				function loadCostume(name) {
+					var url = dir + '/' + name;
+					myself.dropped3dObject(null, name, url);	
+				}
+
+				names.forEach(function (line) {
+					if (line.length > 0) {
+						libMenu.addItem(
+							line,
+							function () {loadCostume(line); }
+						);
+					}
+				});
+				libMenu.popup(world, pos);
+			},
+			'Select a 3D costume from the media library'
+		);
+	}
+	else {
+		// StageMorph
+		menu.addItem(
+			localize(graphicsName) + '...',
+			function () {
+				var dir = graphicsName,
                 names = myself.getCostumesList(dir),
                 libMenu = new MenuMorph(
                     myself,
                     localize('Import') + ' ' + localize(dir)
                 );
 
-            function loadCostume(name) {
-                var url = dir + '/' + name,
+				function loadCostume(name) {
+					var url = dir + '/' + name,
                     img = new Image();
-                img.onload = function () {
-                    var canvas = newCanvas(new Point(img.width, img.height));
-                    canvas.getContext('2d').drawImage(img, 0, 0);
-                    myself.droppedImage(canvas, name);
-                };
-                img.src = url;
-            }
+					img.onload = function () {
+						var canvas = newCanvas(new Point(img.width, img.height));
+						canvas.getContext('2d').drawImage(img, 0, 0);
+						myself.droppedImage(canvas, name);
+					};
+					img.src = url;
+				}
 
-            names.forEach(function (line) {
-                if (line.length > 0) {
-                    libMenu.addItem(
-                        line,
-                        function () {loadCostume(line); }
-                    );
-                }
-            });
-            libMenu.popup(world, pos);
-        },
-        'Select a costume from the media library'
-    );
+				names.forEach(function (line) {
+					if (line.length > 0) {
+						libMenu.addItem(
+							line,
+							function () {loadCostume(line); }
+						);
+					}
+				});
+				libMenu.popup(world, pos);
+			},
+			'Select a 2D costume from the media library'
+		);
+	}
     menu.addItem(
         localize('Sounds') + '...',
         function () {

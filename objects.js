@@ -2367,7 +2367,6 @@ SpriteMorph.prototype.wearCostume = function (costume) {
 
 			myself.object = new THREE.Object3D();
 			myself.object.add( mesh );
-			// myself.object.scale.set(0.2, 0.2, 0.2);
 			myself.object.position.x = myself.xPosition();
 			myself.object.position.y = myself.yPosition();
 			myself.object.position.z = 0;
@@ -4271,8 +4270,11 @@ StageMorph.prototype.colorFiltered = function (aColor, excludedSprite) {
 // StageMorph 3D rendering
 const THREEJS_FIELD_OF_VIEW = 45; // degree
 const THREEJS_CAMERA_DEFAULT_X_POSITION = 0;
-const THREEJS_CAMERA_DEFAULT_Y_POSITION = 0;
+const THREEJS_CAMERA_DEFAULT_Y_POSITION = 50;
 const THREEJS_CAMERA_DEFAULT_Z_POSITION = 300;
+
+var showGrid = true;
+var showAxisHelper = false;
 
 StageMorph.prototype.init3D = function () {
 	var canvas = this.get3dCanvas();
@@ -4290,7 +4292,7 @@ StageMorph.prototype.init3D = function () {
 
 	// camera
 	this.camera = new THREE.PerspectiveCamera(vFOV,
-											  canvas.width / canvas.height, 0.1, 1000);
+											  canvas.width / canvas.height, 0.1, 10000);
 	this.camera.position.set(THREEJS_CAMERA_DEFAULT_X_POSITION, 
 							 THREEJS_CAMERA_DEFAULT_Y_POSITION,
 							 THREEJS_CAMERA_DEFAULT_Z_POSITION);
@@ -4303,6 +4305,51 @@ StageMorph.prototype.init3D = function () {
 	this.light.position.y = 500;
 	this.light.position.z = 500;
 	this.scene.add(this.light);
+
+	// grid
+	if (showGrid) {
+		var geometry = new THREE.Geometry(),
+			material = new THREE.LineBasicMaterial({color:0xabcdef, opacity:1.0}),
+			step = 20,
+			size = 200;
+		for (var i = 0; i <= (size / step) * 2; i++) {
+			geometry.vertices.push(new THREE.Vector3(- size, 0, i * step - size));
+			geometry.vertices.push(new THREE.Vector3(  size, 0, i * step - size));
+			geometry.vertices.push(new THREE.Vector3(i * step - size, 0,  -size));
+			geometry.vertices.push(new THREE.Vector3(i * step - size, 0,   size));
+		}
+		this.grid = new THREE.Line(geometry, material, THREE.LinePieces);
+		this.scene.add(this.grid);
+	}
+
+	if (showAxisHelper) {
+		this.axisHelper = new THREE.AxisHelper(50);
+		// this.axisHelper.position.set(-200, 50, -200);
+		this.axisHelper.position.set(0, 0, 0);
+		this.scene.add(this.axisHelper);
+
+		// var text3dX = new THREE.TextGeometry("X", 
+		// 									 {size:10, height:6, curveSegments:2, 
+		// 									  font:"helvetiker"});
+		// var text3dY = new THREE.TextGeometry("Y",
+		// 									 {size:10, height:6, curveSegments:2, 
+		// 									  font:"helvetiker"});
+		// var text3dZ = new THREE.TextGeometry("Z", 
+		// 									 {size:10, height:6, curveSegments:2,
+		// 									  font:"helvetiker"});
+		// var textMaterialX = new THREE.MeshBasicMaterial({color: 0xaa0000, overdraw: true});
+		// var textMaterialY = new THREE.MeshBasicMaterial({color: 0x00aa00, overdraw: true});
+		// var textMaterialZ = new THREE.MeshBasicMaterial({color: 0x0000aa, overdraw: true});
+		// this.textX = new THREE.Mesh(text3dX, textMaterialX);
+		// this.textY = new THREE.Mesh(text3dY, textMaterialY);
+		// this.textZ = new THREE.Mesh(text3dZ, textMaterialZ);
+		// this.textX.position = {x:50 + 50, y: 50 +  0, z:100 +  0};
+		// this.textY.position = {x:50 +  0, y: 50 + 50, z:100 +  0};
+		// this.textZ.position = {x:50 +  0, y: 50 +  0, z:100 + 50};
+		// this.scene.add(this.textX );
+		// this.scene.add(this.textY );
+		// this.scene.add(this.textZ );		
+	}
 
 	// renderer
 	this.renderer = new THREE.CanvasRenderer({canvas: canvas});

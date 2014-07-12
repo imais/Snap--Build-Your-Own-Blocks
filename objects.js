@@ -399,6 +399,12 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: 'set size to %n %',
             defaults: [100]
         },
+        setScale3D: {
+            type: 'command',
+            category: 'looks',
+            spec: 'scale to x: %n y: %n z: %n',
+            defaults: [1.0, 1.0, 1.0]
+        },
         getScale: {
             type: 'reporter',
             category: 'looks',
@@ -424,6 +430,42 @@ SpriteMorph.prototype.initBlocks = function () {
             category: 'looks',
             spec: 'go back %n layers',
             defaults: [1]
+        },
+        setCameraPosition: {
+            type: 'command',
+            category: 'looks',
+            spec: 'set camera to x: %n y: %n z: %n',
+            defaults: [0, 0, 300]
+        },
+        changeCameraXPosition: {
+            type: 'command',
+            category: 'looks',
+            spec: 'change camera x by %n',
+            defaults: [10]
+        },
+        changeCameraYPosition: {
+            type: 'command',
+            category: 'looks',
+            spec: 'change camera y by %n',
+            defaults: [10]
+        },
+        changeCameraZPosition: {
+            type: 'command',
+            category: 'looks',
+            spec: 'change camera z by %n',
+            defaults: [10]
+        },
+        turnCameraAroundXAxis: {
+            type: 'command',
+            category: 'looks',
+            spec: 'turn camera %n deg around X-Axis',
+            defaults: [10]
+        },
+        turnCameraAroundYAxis: {
+            type: 'command',
+            category: 'looks',
+            spec: 'turn camera %n deg around Y-Axis',
+            defaults: [10]
         },
 
         // Looks - Debugging primitives for development mode
@@ -1684,6 +1726,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('changeScale'));
         blocks.push(block('setScale'));
+        blocks.push(block('setScale3D'));
         blocks.push(watcherToggle('getScale'));
         blocks.push(block('getScale'));
         blocks.push('-');
@@ -2748,6 +2791,13 @@ SpriteMorph.prototype.setScale = function (percentage) {
     });
 };
 
+SpriteMorph.prototype.setScale3D = function (scaleX, scaleY, scaleZ) {
+	if (this.costume instanceof Costume3D) {
+		this.object.scale.set(scaleX, scaleY, scaleZ);
+		this.parent.changed();
+	}
+}
+
 SpriteMorph.prototype.changeScale = function (delta) {
     this.setScale(this.getScale() + (+delta || 0));
 };
@@ -3139,7 +3189,7 @@ SpriteMorph.prototype.changeYPosition = function (delta) {
     this.setYPosition(this.yPosition() + (+delta || 0));
 
 	if (this.costume instanceof Costume3D) {
-		this.object.position.y += num;
+		this.object.position.y += delta;
 		this.parent.changed();
 	}
 };
@@ -4220,7 +4270,9 @@ StageMorph.prototype.colorFiltered = function (aColor, excludedSprite) {
 
 // StageMorph 3D rendering
 const THREEJS_FIELD_OF_VIEW = 45; // degree
-const THREEJS_CAMERA_Z_POSITION = 300;
+const THREEJS_CAMERA_DEFAULT_X_POSITION = 0;
+const THREEJS_CAMERA_DEFAULT_Y_POSITION = 0;
+const THREEJS_CAMERA_DEFAULT_Z_POSITION = 300;
 
 StageMorph.prototype.init3D = function () {
 	var canvas = this.get3dCanvas();
@@ -4228,7 +4280,7 @@ StageMorph.prototype.init3D = function () {
 	// var vFOV = 2 * Math.atan(canvas.height / (2 * THREEJS_CAMERA_Z_POSITION));
 	var vFOV = THREEJS_FIELD_OF_VIEW;
 	// var dist = canvas.height / (2 * Math.tan(radians(vFOV) / 2));
-	var dist = THREEJS_CAMERA_Z_POSITION;
+	var dist = THREEJS_CAMERA_DEFAULT_Z_POSITION;
 	console.log("vFOV=" + vFOV + ", dist=" + dist);
 	var height = 2 * Math.tan(radians(vFOV / 2)) * dist;
 	var width = (canvas.width / canvas.height) * height;
@@ -4239,14 +4291,17 @@ StageMorph.prototype.init3D = function () {
 	// camera
 	this.camera = new THREE.PerspectiveCamera(vFOV,
 											  canvas.width / canvas.height, 0.1, 1000);
-	this.camera.position.z = THREEJS_CAMERA_Z_POSITION;
+	this.camera.position.set(THREEJS_CAMERA_DEFAULT_X_POSITION, 
+							 THREEJS_CAMERA_DEFAULT_Y_POSITION,
+							 THREEJS_CAMERA_DEFAULT_Z_POSITION);
+	this.camera.lookAt({x:0, y:0, z:0});
 	this.scene.add(this.camera);
 
 	// lighting
 	this.light = new THREE.PointLight( 0xFFFFFF );
-	this.light.position.x = 50;
-	this.light.position.y = 50;
-	this.light.position.z = 100;
+	this.light.position.x = 500;
+	this.light.position.y = 500;
+	this.light.position.z = 500;
 	this.scene.add(this.light);
 
 	// renderer
@@ -4644,6 +4699,13 @@ StageMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('changeEffect'));
         blocks.push(block('setEffect'));
         blocks.push(block('clearEffects'));
+        blocks.push('-');
+        blocks.push(block('setCameraPosition'));
+        blocks.push(block('changeCameraXPosition'));
+        blocks.push(block('changeCameraYPosition'));
+        blocks.push(block('changeCameraZPosition'));
+        blocks.push(block('turnCameraAroundXAxis'));
+        blocks.push(block('turnCameraAroundYAxis'));
 
     // for debugging: ///////////////
 
@@ -5167,6 +5229,71 @@ StageMorph.prototype.changeEffect
 
 StageMorph.prototype.clearEffects
     = SpriteMorph.prototype.clearEffects;
+
+StageMorph.prototype.setCameraPosition = function(x, y, z) {
+	// TODO: check if there is at least one 3D object
+	this.camera.position.x = x;
+	this.camera.position.y = y;
+	this.camera.position.z = z;
+	this.camera.lookAt({x:0, y:0, z:0});
+	this.changed();
+}
+
+StageMorph.prototype.changeCameraXPosition = function(delta) {
+	this.camera.position.x += delta;
+	this.camera.lookAt({x:0, y:0, z:0});
+	this.changed();
+}
+
+StageMorph.prototype.changeCameraYPosition = function(delta) {
+	this.camera.position.y += delta;
+	this.camera.lookAt({x:0, y:0, z:0});
+	this.changed();
+}
+
+StageMorph.prototype.changeCameraZPosition = function(delta) {
+	this.camera.position.z += delta;
+	this.camera.lookAt({x:0, y:0, z:0});
+	this.changed();
+}
+
+StageMorph.prototype.turnCameraAroundXAxis = function(deg) {
+	var y = this.camera.position.y, z = this.camera.position.z,
+		radius = Math.sqrt(Math.pow(y, 2) + Math.pow(z, 2)),
+		theta = Math.acos(z / radius);
+	
+	if (0 < y)
+		theta = 2 * Math.PI - theta;
+
+	this.camera.position.y = radius * Math.sin(theta + radians(deg)) * (-1);
+	this.camera.position.z = radius * Math.cos(theta + radians(deg));
+	this.camera.lookAt({x:0, y:0, z:0});
+	console.log("camera.position={" + 
+				this.camera.position.x + ", " + 
+				this.camera.position.y + ", " + 
+				this.camera.position.z + "}, theta=" + 
+				degrees(theta));
+	this.changed();
+}
+
+StageMorph.prototype.turnCameraAroundYAxis = function(deg) {
+	var x = this.camera.position.x, z = this.camera.position.z,
+		radius = Math.sqrt(Math.pow(x, 2) + Math.pow(z, 2)),
+		theta = Math.acos(z / radius);
+	
+	if (x < 0)
+		theta = 2 * Math.PI - theta;
+
+	this.camera.position.x = radius * Math.sin(theta + radians(deg));
+	this.camera.position.z = radius * Math.cos(theta + radians(deg));
+	this.camera.lookAt({x:0, y:0, z:0});
+	console.log("camera.position={" + 
+				this.camera.position.x + ", " + 
+				this.camera.position.y + ", " + 
+				this.camera.position.z + "}, theta=" + 
+				degrees(theta));
+	this.changed();
+}
 
 // StageMorph sound management
 

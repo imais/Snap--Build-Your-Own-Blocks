@@ -3112,6 +3112,10 @@ SpriteMorph.prototype.yPosition = function () {
     return this.rotationCenter().y;
 };
 
+SpriteMorph.prototype.zPosition = function () {
+	return  (this.costume instanceof Costume3D) ? this.object.position.z : 0;
+}
+
 SpriteMorph.prototype.direction = function () {
     return this.heading;
 };

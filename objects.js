@@ -4330,45 +4330,72 @@ StageMorph.prototype.toggleGrid = function () {
 		return;
 	}
 
-	var geometry = new THREE.Geometry(),
-	material = new THREE.LineBasicMaterial({color:0xabcdef, opacity:1.0}),
+	var grid = new THREE.Geometry(), 
+	gridMaterial = new THREE.LineBasicMaterial({color:0xabcdef, opacity:0.5}),
 	step = 20,
 	size = 200;
 	for (var i = 0; i <= (size / step) * 2; i++) {
-		geometry.vertices.push(new THREE.Vector3(- size, 0, i * step - size));
-		geometry.vertices.push(new THREE.Vector3(  size, 0, i * step - size));
-		geometry.vertices.push(new THREE.Vector3(i * step - size, 0,  -size));
-		geometry.vertices.push(new THREE.Vector3(i * step - size, 0,   size));
+		grid.vertices.push(new THREE.Vector3(- size, 0, i * step - size));
+		grid.vertices.push(new THREE.Vector3(  size, 0, i * step - size));
+		grid.vertices.push(new THREE.Vector3(i * step - size, 0,  -size));
+		grid.vertices.push(new THREE.Vector3(i * step - size, 0,   size));
 	}
-	this.grid = new THREE.Line(geometry, material, THREE.LinePieces);
+
+	var xzAxis = new THREE.Geometry(),
+	xzAxisMaterial = new THREE.LineBasicMaterial({color:0xabcdef, opacity:1.0, linewidth:2});
+	xzAxis.vertices.push(new THREE.Vector3(0, 0, -size));
+	xzAxis.vertices.push(new THREE.Vector3(0, 0,  size));
+	xzAxis.vertices.push(new THREE.Vector3(-size, 0,  0));
+	xzAxis.vertices.push(new THREE.Vector3( size, 0,  0));
+
+	var yAxis = new THREE.Geometry(),
+	yAxisMaterial = new THREE.LineDashedMaterial({color:0xabcdef, opacity:1.0, linewidth:4,
+												  dashSize:2, gapSize:20});
+	yAxis.vertices.push(new THREE.Vector3(0, -size/2, 0));
+	yAxis.vertices.push(new THREE.Vector3(0,  size/2, 0));
+
+	var textX = new THREE.TextGeometry("X", 
+									   {size:10, height:2, curveSegments:2, 
+										font:"helvetiker"}),
+	textY = new THREE.TextGeometry("Y",
+								   {size:10, height:2, curveSegments:2, 
+									font:"helvetiker"}),
+	textZ = new THREE.TextGeometry("Z", 
+								   {size:10, height:2, curveSegments:2,
+									font:"helvetiker"});
+	var textXMaterial = new THREE.MeshBasicMaterial({color: 0xaa0000, overdraw: true}),
+	textYMaterial = new THREE.MeshBasicMaterial({color: 0x00aa00, overdraw: true}),
+	textZMaterial = new THREE.MeshBasicMaterial({color: 0x0000aa, overdraw: true});
+	var textXMesh = new THREE.Mesh(textX, textXMaterial),
+	textYMesh = new THREE.Mesh(textY, textYMaterial),
+	textZMesh = new THREE.Mesh(textZ, textZMaterial);
+
+	textX.computeBoundingBox();
+	textXMesh.position = {x: size + step, 
+						  y: 0, 
+						  z: textX.boundingBox.center().y};
+	textXMesh.rotation.x = radians(-90);
+
+	textY.computeBoundingBox();
+	textYMesh.position = {x:-textY.boundingBox.center().x, 
+						  y: size/2 + step, 
+						  z:-textY.boundingBox.center().z};
+
+	textZ.computeBoundingBox();
+	textZMesh.position = {x:-textZ.boundingBox.center().x,
+						  y: 0, 
+						  z:size + step};
+	textZMesh.rotation.x = radians(-90);
+
+	this.grid = new THREE.Object3D();
+	this.grid.add(new THREE.Line(grid, gridMaterial, THREE.LinePieces));
+	this.grid.add(new THREE.Line(xzAxis, xzAxisMaterial, THREE.LinePieces));
+	this.grid.add(new THREE.Line(yAxis, yAxisMaterial, THREE.LinePieces));
+	this.grid.add(textXMesh);
+	this.grid.add(textYMesh);
+	this.grid.add(textZMesh);
 	this.scene.add(this.grid);
 	
-	// this.axisHelper = new THREE.AxisHelper(50);
-	// this.axisHelper.position.set(0, 0, 0);
-	// this.scene.add(this.axisHelper);
-
-	// var text3dX = new THREE.TextGeometry("X", 
-	// 									 {size:10, height:6, curveSegments:2, 
-	// 									  font:"helvetiker"});
-	// var text3dY = new THREE.TextGeometry("Y",
-	// 									 {size:10, height:6, curveSegments:2, 
-	// 									  font:"helvetiker"});
-	// var text3dZ = new THREE.TextGeometry("Z", 
-	// 									 {size:10, height:6, curveSegments:2,
-	// 									  font:"helvetiker"});
-	// var textMaterialX = new THREE.MeshBasicMaterial({color: 0xaa0000, overdraw: true});
-	// var textMaterialY = new THREE.MeshBasicMaterial({color: 0x00aa00, overdraw: true});
-	// var textMaterialZ = new THREE.MeshBasicMaterial({color: 0x0000aa, overdraw: true});
-	// this.textX = new THREE.Mesh(text3dX, textMaterialX);
-	// this.textY = new THREE.Mesh(text3dY, textMaterialY);
-	// this.textZ = new THREE.Mesh(text3dZ, textMaterialZ);
-	// this.textX.position = {x:50 + 50, y: 50 +  0, z:100 +  0};
-	// this.textY.position = {x:50 +  0, y: 50 + 50, z:100 +  0};
-	// this.textZ.position = {x:50 +  0, y: 50 +  0, z:100 + 50};
-	// this.scene.add(this.textX );
-	// this.scene.add(this.textY );
-	// this.scene.add(this.textZ );		
-
 	this.changed();
 }
 

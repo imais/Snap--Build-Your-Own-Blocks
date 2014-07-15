@@ -1086,19 +1086,34 @@ IDE_Morph.prototype.createSpriteBar = function () {
         myself.currentSprite.setName(nameField.getValue());
     };
 
-    // padlock
-    padlock = new ToggleMorph(
-        'checkbox',
-        null,
-        function () {
-            myself.currentSprite.isDraggable =
-                !myself.currentSprite.isDraggable;
-        },
-        localize('draggable'),
-        function () {
-            return myself.currentSprite.isDraggable;
-        }
-    );
+	// padlock
+    if (this.currentSprite instanceof StageMorph) {
+		padlock = new ToggleMorph(
+			'checkbox',
+			null,
+			function () {
+				myself.currentSprite.toggleGrid();
+			},
+			'display grid',
+			function () {
+				return myself.currentSprite.getIsGridVisible();
+			}
+		);
+	}
+	else {
+		padlock = new ToggleMorph(
+			'checkbox',
+			null,
+			function () {
+				myself.currentSprite.isDraggable =
+					!myself.currentSprite.isDraggable;
+			},
+			localize('draggable'),
+			function () {
+				return myself.currentSprite.isDraggable;
+			}
+		);
+	}
     padlock.label.isBold = false;
     padlock.label.setColor(this.buttonLabelColor);
     padlock.color = tabColors[2];
@@ -1115,9 +1130,7 @@ IDE_Morph.prototype.createSpriteBar = function () {
     padlock.setPosition(nameField.bottomLeft().add(2));
     padlock.drawNew();
     this.spriteBar.add(padlock);
-    if (this.currentSprite instanceof StageMorph) {
-        padlock.hide();
-    }
+
 
     // tab bar
     tabBar.tabTo = function (tabString) {

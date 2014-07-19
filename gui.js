@@ -1605,9 +1605,9 @@ IDE_Morph.prototype.droppedImage = function (aCanvas, name) {
     this.hasChangedMedia = true;
 };
 
-IDE_Morph.prototype.dropped3dObject = function (aCanvas, name, url) {
+IDE_Morph.prototype.dropped3dObject = function (name, url) {
     var costume = new Costume3D(
-        aCanvas,
+        null, // no canvas for 3D costumes
         name ? name.split('.')[0] : '', // up to period
 		url
     );
@@ -1620,6 +1620,24 @@ IDE_Morph.prototype.dropped3dObject = function (aCanvas, name, url) {
     this.spriteBar.tabBar.tabTo('costumes');
     this.hasChangedMedia = true;
 };
+
+IDE_Morph.prototype.droppedTexture = function (name, url) {
+	console.log('droppedTexture: ' + name + ', ' + url);
+
+    var texture = new Texture(
+        name ? name.split('.')[0] : '', // up to period
+		url
+    );
+
+    this.currentSprite.addTexture(texture);
+    this.currentSprite.wearTexture(texture);
+	// this.currentSprite.freshPalette();
+	// this.palette.changed();
+	// this.palette.drawNew();
+    this.spriteBar.tabBar.tabTo('costumes');
+    this.hasChangedMedia = true;
+};
+
 
 IDE_Morph.prototype.droppedSVG = function (anImage, name) {
     var costume = new SVG_Costume(anImage, name.split('.')[0]);
@@ -2576,7 +2594,7 @@ IDE_Morph.prototype.projectMenu = function () {
 
 				function loadCostume(name) {
 					var url = dir + '/' + name;
-					myself.dropped3dObject(null, name, url);	
+					myself.dropped3dObject(name, url);	
 				}
 
 				names.forEach(function (line) {
@@ -2591,6 +2609,36 @@ IDE_Morph.prototype.projectMenu = function () {
 			},
 			'Select a 3D costume from the media library'
 		);
+
+		menu.addItem(
+			'Textures...', // TODO: localize this 
+			function () {
+				var dir = 'Textures',
+                names = myself.getTexturesList(dir),
+                libMenu = new MenuMorph(
+                    myself,
+                    localize('Import') + ' ' + dir 
+                );
+
+				function loadTexture(name) {
+					var url = dir + '/' + name;
+					myself.droppedTexture(name, url);	
+				}
+
+				names.forEach(function (line) {
+					if (line.length > 0) {
+						libMenu.addItem(
+							line,
+							function () {loadTexture(line); }
+						);
+					}
+				});
+				libMenu.popup(world, pos);
+			},
+			'Select a texture from the media library'
+		);
+			
+			
 	}
 	else {
 		// StageMorph
@@ -2682,6 +2730,9 @@ IDE_Morph.prototype.getCostumesList = function (dirname) {
     });
     return costumes;
 };
+
+IDE_Morph.prototype.getTexturesList = 
+	IDE_Morph.prototype.getCostumesList;
 
 // IDE_Morph menu actions
 

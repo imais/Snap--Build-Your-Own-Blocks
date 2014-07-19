@@ -40,8 +40,10 @@
         SpriteHighlightMorph
         StageMorph
         Costume
+			Costume3D	
             SVG_Costume
         CostumeEditorMorph
+		Texture
         Sound
         Note
         CellMorph
@@ -1304,6 +1306,8 @@ SpriteMorph.prototype.init = function (globals) {
     this.customBlocks = [];
     this.costumes = new List();	
     this.costume = null;
+    this.textures = new List();	
+    this.texture = null;
 	this.sounds = new List();
     this.normalExtent = new Point(60, 60); // only for costume-less situation
     this.scale = 1;
@@ -1556,11 +1560,6 @@ SpriteMorph.prototype.colorFiltered = function (aColor) {
     ctx.putImageData(dta, 0, 0);
     return morph;
 };
-
-// SpriteMorph 3D rendering
-SpriteMorph.load3dCostume = function (costume) {
-	
-}
 
 // SpriteMorph block instantiation
 
@@ -2361,12 +2360,13 @@ SpriteMorph.prototype.wearCostume = function (costume) {
 		var loader = new THREE.JSONLoader(), myself = this;
 		loader.load(costume.url, function(geometry) { 
 			var color = new THREE.Color(myself.color.r/255, myself.color.g/255, myself.color.b/255);
-			var mesh = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial({color: color}) );
+			myself.mesh = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({color: color}));
 			var sphere = geometry.boundingSphere; // THREE.Sphere	
-			mesh.position.set( -sphere.center.x, -sphere.center.y, -sphere.center.z );
+			myself.mesh.position.set(-sphere.center.x, -sphere.center.y, -sphere.center.z);
+			myself.geometry = geometry;
 
 			myself.object = new THREE.Object3D();
-			myself.object.add( mesh );
+			myself.object.add( myself.mesh );
 			myself.object.position.x = myself.xPosition();
 			myself.object.position.y = myself.yPosition();
 			myself.object.position.z = 0;
@@ -2475,6 +2475,41 @@ SpriteMorph.prototype.doSwitchToCostume = function (id) {
 
 SpriteMorph.prototype.reportCostumes = function () {
     return this.costumes;
+};
+
+// SpriteMorph texture management
+
+SpriteMorph.prototype.addTexture = function (texture) {
+    if (!texture.name) {
+        texture.name = 'texture' + (this.textures.length() + 1);
+    }
+	this.textures.add(texture);
+};
+
+SpriteMorph.prototype.wearTexture = function (texture) {
+	var myself = this;
+
+	if (this.costume instanceof Costume3D) {
+		var map = THREE.ImageUtils.loadTexture(texture.url);
+		var color = new THREE.Color(this.color.r/255, this.color.g/255, this.color.b/255);	
+		var mesh = new THREE.Mesh(this.geometry, 
+								  new THREE.MeshPhongMaterial({map: map, 
+															   color: color,
+															   vertexColors: THREE.NoColors
+															  }));
+		var sphere = this.geometry.boundingSphere; // THREE.Sphere	
+		mesh.position.set( -sphere.center.x, -sphere.center.y, -sphere.center.z );
+
+		this.object.remove(this.mesh);
+		this.object.add( mesh );
+		this.mesh = mesh;
+		this.parent.changed();
+		// console.log("[" + Date.now() + "] 3D texture finished loading!" );
+
+		this.texture = texture;
+		// this.texture.map = map; // TODO: do this to avoid reloading
+		return;
+	}
 };
 
 // SpriteMorph sound management
@@ -5968,9 +6003,7 @@ Costume3D.uber = Costume.prototype;
 
 function Costume3D(canvas, name, url, rotationCenter) {
 	this.contents = canvas; // do not create a new canvas here
-	// this.shrinkToFit(this.maxExtent);
 	this.name = name || null;
-	// this.rotationCenter = rotationCenter || this.center();
 	this.version = Date.now(); // for observer optimization
 	this.loaded = null; // for de-serialization only
 	this.url = url;
@@ -6176,6 +6209,39 @@ CostumeEditorMorph.prototype.mouseDownLeft = function (pos) {
 
 CostumeEditorMorph.prototype.mouseMove
     = CostumeEditorMorph.prototype.mouseDownLeft;
+
+// Texture /////////////////////////////////////////////////////////////
+
+/*
+  I am a texture for a 3D object
+*/
+
+// Texture inherits from Costume:
+
+Texture.prototype = new Costume();
+Texture.prototype.constructor = Texture;
+Texture.uber = Costume.prototype;
+
+// Texture instance creation
+
+function Texture(name, url) {
+	this.name = name || null;
+	this.version = Date.now(); // for observer optimization
+	this.loaded = null; // for de-serialization only
+	this.url = url;
+}
+
+Texture.prototype.toString = function () {
+	return 'a Texture(' + this.name + ')';
+};
+
+// Texture duplication
+// Texture flipping
+// Texture thumbnail
+Texture.prototype.thumbnail = function (extentPoint) {
+    var trg = newCanvas(extentPoint);
+	return trg;
+}
 
 // Sound /////////////////////////////////////////////////////////////
 

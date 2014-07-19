@@ -1335,6 +1335,7 @@ SpriteMorph.prototype.init = function (globals) {
 
     this.isDraggable = true;
     this.isDown = false;
+	this.hasBecome3D = false; // Flag to check if the 2D Morph has becomes 3D
 
     this.heading = 90;
     this.changed();
@@ -2373,7 +2374,8 @@ SpriteMorph.prototype.wearCostume = function (costume) {
 
 			myself.hide();  // hide the 2D image
 			myself.parent.scene.add(myself.object);
-			myself.parent.changed();
+			myself.parent.changed(); // redraw stage
+			// myself.parent.parent.spriteBar.changed(); // TODO: spriteBar to redraw for the 3D switch
 			// console.log("[" + Date.now() + "] 3D costume finished loading!" );
 		});
 
@@ -2835,6 +2837,46 @@ SpriteMorph.prototype.setScale3D = function (scaleX, scaleY, scaleZ) {
 SpriteMorph.prototype.changeScale = function (delta) {
     this.setScale(this.getScale() + (+delta || 0));
 };
+
+SpriteMorph.prototype.toggle3D = function() {
+	// TODO: modify to use wearTexture()
+
+	var width = this.costume.contents.width,
+		height = this.costume.contents.height;
+
+	var map = THREE.ImageUtils.loadTexture(this.costume.url);	
+	this.geometry = new THREE.PlaneGeometry(width, height);
+	var mesh = new THREE.Mesh(this.geometry, new THREE.MeshPhongMaterial({map: map, 
+																		  side: THREE.DoubleSide}));
+	mesh.position.set( -width/2, -height/2, 0 );
+
+	if (!this.object) {
+		this.object = new THREE.Object3D();
+	}
+	if (this.mesh) {
+		this.object.remove(this.mesh);
+	}
+	this.object.add( mesh );
+	this.object.position.x = this.xPosition();
+	this.object.position.y = this.yPosition();
+	this.object.position.z = 0;
+	this.mesh = mesh;
+	
+	this.hide();  // hide the 2D image
+	this.parent.scene.add(this.object);
+	this.parent.changed();
+
+	// console.log("[" + Date.now() + "] 3D texture finished loading!" );
+	// this.texture = texture;
+
+	this.hasBecome3D = !this.hasBecome3D;
+
+}
+
+SpriteMorph.prototype.getHasBecome3D = function() {
+	return this.hasBecome3D;
+}
+
 
 // SpriteMorph graphic effects
 
@@ -4310,7 +4352,7 @@ StageMorph.prototype.colorFiltered = function (aColor, excludedSprite) {
 const THREEJS_FIELD_OF_VIEW = 45; // degree
 const THREEJS_CAMERA_DEFAULT_X_POSITION = 0;
 const THREEJS_CAMERA_DEFAULT_Y_POSITION = 50;
-const THREEJS_CAMERA_DEFAULT_Z_POSITION = 300;
+const THREEJS_CAMERA_DEFAULT_Z_POSITION = 500;
 
 StageMorph.prototype.init3D = function () {
 	var canvas = this.get3dCanvas();
@@ -4386,8 +4428,8 @@ StageMorph.prototype.toggleGrid = function () {
 	var yAxis = new THREE.Geometry(),
 	yAxisMaterial = new THREE.LineDashedMaterial({color:0xabcdef, opacity:1.0, linewidth:4,
 												  dashSize:2, gapSize:20});
-	yAxis.vertices.push(new THREE.Vector3(0, -size/2, 0));
-	yAxis.vertices.push(new THREE.Vector3(0,  size/2, 0));
+	yAxis.vertices.push(new THREE.Vector3(0, -size * 4/5, 0));
+	yAxis.vertices.push(new THREE.Vector3(0,  size * 4/5, 0));
 
 	var textX = new THREE.TextGeometry("X", 
 									   {size:10, height:2, curveSegments:2, 
@@ -4413,7 +4455,7 @@ StageMorph.prototype.toggleGrid = function () {
 
 	textY.computeBoundingBox();
 	textYMesh.position = {x:-textY.boundingBox.center().x, 
-						  y: size/2 + step, 
+						  y: size * 4/5 + step, 
 						  z:-textY.boundingBox.center().z};
 
 	textZ.computeBoundingBox();
@@ -5708,13 +5750,14 @@ SpriteBubbleMorph.prototype.fixLayout = function () {
 
 // Costume instance creation
 
-function Costume(canvas, name, rotationCenter) {
+function Costume(canvas, name, url, rotationCenter) {
     this.contents = canvas || newCanvas();
     this.shrinkToFit(this.maxExtent);
     this.name = name || null;
     this.rotationCenter = rotationCenter || this.center();
     this.version = Date.now(); // for observer optimization
     this.loaded = null; // for de-serialization only
+	this.url = url;
 }
 
 Costume.prototype.maxExtent = StageMorph.prototype.dimensions;

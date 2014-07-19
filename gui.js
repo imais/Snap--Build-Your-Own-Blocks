@@ -983,7 +983,8 @@ IDE_Morph.prototype.createSpriteBar = function () {
     var rotationStyleButtons = [],
         thumbSize = new Point(45, 45),
         nameField,
-        padlock,
+		checkbox, 
+		checkbox2,
         thumbnail,
         tabCorner = 15,
         tabColors = this.tabColors,
@@ -1086,22 +1087,22 @@ IDE_Morph.prototype.createSpriteBar = function () {
         myself.currentSprite.setName(nameField.getValue());
     };
 
-	// padlock
+	// checkbox
     if (this.currentSprite instanceof StageMorph) {
-		padlock = new ToggleMorph(
+		checkbox = new ToggleMorph(
 			'checkbox',
 			null,
 			function () {
 				myself.currentSprite.toggleGrid();
 			},
-			'display grid',
+			'display grid', // TODO: localize
 			function () {
 				return myself.currentSprite.getIsGridVisible();
 			}
 		);
 	}
 	else {
-		padlock = new ToggleMorph(
+		checkbox = new ToggleMorph(
 			'checkbox',
 			null,
 			function () {
@@ -1114,23 +1115,54 @@ IDE_Morph.prototype.createSpriteBar = function () {
 			}
 		);
 	}
-    padlock.label.isBold = false;
-    padlock.label.setColor(this.buttonLabelColor);
-    padlock.color = tabColors[2];
-    padlock.highlightColor = tabColors[0];
-    padlock.pressColor = tabColors[1];
+    checkbox.label.isBold = false;
+    checkbox.label.setColor(this.buttonLabelColor);
+    checkbox.color = tabColors[2];
+    checkbox.highlightColor = tabColors[0];
+    checkbox.pressColor = tabColors[1];
 
-    padlock.tick.shadowOffset = MorphicPreferences.isFlat ?
+    checkbox.tick.shadowOffset = MorphicPreferences.isFlat ?
             new Point() : new Point(-1, -1);
-    padlock.tick.shadowColor = new Color(); // black
-    padlock.tick.color = this.buttonLabelColor;
-    padlock.tick.isBold = false;
-    padlock.tick.drawNew();
+    checkbox.tick.shadowColor = new Color(); // black
+    checkbox.tick.color = this.buttonLabelColor;
+    checkbox.tick.isBold = false;
+    checkbox.tick.drawNew();
 
-    padlock.setPosition(nameField.bottomLeft().add(2));
-    padlock.drawNew();
-    this.spriteBar.add(padlock);
+    checkbox.setPosition(nameField.bottomLeft().add(2));
+    checkbox.drawNew();
+    this.spriteBar.add(checkbox);
 
+	// second checkbox for 2D SpriteMorph
+	if(this.currentSprite instanceof SpriteMorph &&
+	   !(this.currentSprite.costume instanceof Costume3D)) {
+		checkbox2 = new ToggleMorph(
+			'checkbox',
+			null,
+			function () {
+				myself.currentSprite.toggle3D();
+			},
+			'switch to 3D', // TODO: localize
+			function () {
+				return myself.currentSprite.getHasBecome3D();
+			}
+		);
+		checkbox2.label.isBold = false;
+		checkbox2.label.setColor(this.buttonLabelColor);
+		checkbox2.color = tabColors[2];
+		checkbox2.highlightColor = tabColors[0];
+		checkbox2.pressColor = tabColors[1];
+
+		checkbox2.tick.shadowOffset = MorphicPreferences.isFlat ?
+            new Point() : new Point(-1, -1);
+		checkbox2.tick.shadowColor = new Color(); // black
+		checkbox2.tick.color = this.buttonLabelColor;
+		checkbox2.tick.isBold = false;
+		checkbox2.tick.drawNew();
+
+		checkbox2.setPosition(checkbox.topRight().add(new Point(60, 0)));
+		checkbox2.drawNew();
+		this.spriteBar.add(checkbox2);
+	}
 
     // tab bar
     tabBar.tabTo = function (tabString) {
@@ -1578,10 +1610,11 @@ IDE_Morph.prototype.reactToWorldResize = function (rect) {
     }
 };
 
-IDE_Morph.prototype.droppedImage = function (aCanvas, name) {
+IDE_Morph.prototype.droppedImage = function (aCanvas, name, url) {
     var costume = new Costume(
         aCanvas,
-        name ? name.split('.')[0] : '' // up to period
+        name ? name.split('.')[0] : '', // up to period
+		url
     );
 
     if (costume.isTainted()) {
@@ -2565,7 +2598,7 @@ IDE_Morph.prototype.projectMenu = function () {
 					img.onload = function () {
 						var canvas = newCanvas(new Point(img.width, img.height));
 						canvas.getContext('2d').drawImage(img, 0, 0);
-						myself.droppedImage(canvas, name);
+						myself.droppedImage(canvas, name, img.src);
 					};
 					img.src = url;
 				}

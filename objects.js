@@ -2356,29 +2356,55 @@ SpriteMorph.prototype.addCostume = function (costume) {
 };
 
 SpriteMorph.prototype.wearCostume = function (costume) {
+	var myself = this;
 
 	if (costume instanceof Costume3D) {
-		var loader = new THREE.JSONLoader(), myself = this;
-		loader.load(costume.url, function(geometry) { 
-			var color = new THREE.Color(myself.color.r/255, myself.color.g/255, myself.color.b/255);
-			myself.mesh = new THREE.Mesh(geometry, new THREE.MeshLambertMaterial({color: color}));
-			var sphere = geometry.boundingSphere; // THREE.Sphere	
-			myself.mesh.position.set(-sphere.center.x, -sphere.center.y, -sphere.center.z);
-			myself.geometry = geometry;
+		if (myself.costume && costume != myself.costume) {
+			myself.object.remove(myself.mesh);
+		}
 
-			myself.object = new THREE.Object3D();
-			myself.object.add( myself.mesh );
-			myself.object.position.x = myself.xPosition();
-			myself.object.position.y = myself.yPosition();
-			myself.object.position.z = 0;
+		if (costume.geometry != null) {
+			// we have loaded a 3D geometry already
+			var color = new THREE.Color(myself.color.r/255, 
+										myself.color.g/255, 
+										myself.color.b/255);
+			var material = new THREE.MeshLambertMaterial({color: color}),
+			mesh = new THREE.Mesh(geometry, material),
+			sphere = geometry.boundingSphere; // THREE.Sphere
+			mesh.position.set(-sphere.center.x, -sphere.center.y, -sphere.center.z);
 
-			myself.hide();  // hide the 2D image
+			myself.mesh = mesh;
+			myself.hide();
+			myself.object.add(myself.mesh);
 			myself.parent.scene.add(myself.object);
 			myself.parent.changed(); // redraw stage
-			// myself.parent.parent.spriteBar.changed(); // TODO: spriteBar to redraw for the 3D switch
-			// console.log("[" + Date.now() + "] 3D costume finished loading!" );
-		});
+		}
+		else {
+			// first time we read this geometry
+			var loader = new THREE.JSONLoader();
+			loader.load(costume.url, function(geometry) {
+				var color = new THREE.Color(myself.color.r/255, 
+											myself.color.g/255, 
+											myself.color.b/255);
+				var material = new THREE.MeshLambertMaterial({color: color}),
+					mesh = new THREE.Mesh(geometry, material),
+					sphere = geometry.boundingSphere; // THREE.Sphere
+				mesh.position.set(-sphere.center.x, -sphere.center.y, -sphere.center.z);
+				myself.mesh = mesh;
 
+				myself.object = new THREE.Object3D();
+				myself.object.add(myself.mesh);
+				myself.object.position.x = myself.xPosition();
+				myself.object.position.y = myself.yPosition();
+				myself.object.position.z = 0;
+
+				myself.hide(); // hide the 2D image
+				myself.parent.scene.add(myself.object);
+				myself.parent.changed(); // redraw stage
+				// myself.parent.parent.spriteBar.changed(); // TODO: spriteBar to redraw for the 3D switch
+				// console.log("[" + Date.now() + "] 3D costume finished loading!" );				
+			});
+		}
 		this.costume = costume;
 		return;
 	}
@@ -2503,7 +2529,7 @@ SpriteMorph.prototype.wearTexture = function (texture) {
 		mesh.position.set( -sphere.center.x, -sphere.center.y, -sphere.center.z );
 
 		this.object.remove(this.mesh);
-		this.object.add( mesh );
+		this.object.add(mesh);
 		this.mesh = mesh;
 		this.parent.changed();
 		// console.log("[" + Date.now() + "] 3D texture finished loading!" );
@@ -5757,7 +5783,11 @@ function Costume(canvas, name, url, rotationCenter) {
     this.rotationCenter = rotationCenter || this.center();
     this.version = Date.now(); // for observer optimization
     this.loaded = null; // for de-serialization only
+
+	// newly added for 3D
 	this.url = url;
+	this.geometry = null;
+	// this.isSwitcheTo3D = false;
 }
 
 Costume.prototype.maxExtent = StageMorph.prototype.dimensions;
@@ -6050,6 +6080,7 @@ function Costume3D(canvas, name, url, rotationCenter) {
 	this.version = Date.now(); // for observer optimization
 	this.loaded = null; // for de-serialization only
 	this.url = url;
+	this.geometry = null;
 }
 
 Costume3D.prototype.toString = function () {

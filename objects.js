@@ -40,7 +40,6 @@
         SpriteHighlightMorph
         StageMorph
         Costume
-			Costume3D	
             SVG_Costume
         CostumeEditorMorph
 		Texture
@@ -1335,7 +1334,6 @@ SpriteMorph.prototype.init = function (globals) {
 
     this.isDraggable = true;
     this.isDown = false;
-	this.hasBecome3D = false; // Flag to check if the 2D Morph has becomes 3D
 
     this.heading = 90;
     this.changed();
@@ -1414,12 +1412,16 @@ SpriteMorph.prototype.drawNew = function () {
         ctx,
         handle;
 
-	if (this.costume instanceof Costume3D) {
+	if (this.costume && this.costume.is3D) {
 		// the 3D object will be rendered in StageMorph.drawOn() later
 		this.hide();
 		return;
 	}
-
+	else {
+		// show the 2D Sprite
+		this.show();
+	}
+	
     if (this.isWarped) {
         this.wantsRedraw = true;
         return;
@@ -2356,32 +2358,32 @@ SpriteMorph.prototype.addCostume = function (costume) {
 };
 
 SpriteMorph.prototype.wearCostume = function (costume) {
-	var myself = this;
 
-	if (costume instanceof Costume3D) {
-		if (myself.costume && costume != myself.costume) {
-			myself.object.remove(myself.mesh);
-		}
+	if (this.object && this.costume && costume != this.costume) {
+		this.object.remove(this.mesh);
+		this.parent.changed(); // redraw stage
+	}
 
+	if (costume.is3D) {
 		if (costume.geometry != null) {
 			// we have loaded a 3D geometry already
-			var color = new THREE.Color(myself.color.r/255, 
-										myself.color.g/255, 
-										myself.color.b/255);
+			var color = new THREE.Color(this.color.r/255, 
+										this.color.g/255, 
+										this.color.b/255);
 			var material = new THREE.MeshLambertMaterial({color: color}),
-			mesh = new THREE.Mesh(geometry, material),
-			sphere = geometry.boundingSphere; // THREE.Sphere
+			mesh = new THREE.Mesh(costume.geometry, material),
+			sphere = costume.geometry.boundingSphere; // THREE.Sphere
 			mesh.position.set(-sphere.center.x, -sphere.center.y, -sphere.center.z);
 
-			myself.mesh = mesh;
-			myself.hide();
-			myself.object.add(myself.mesh);
-			myself.parent.scene.add(myself.object);
-			myself.parent.changed(); // redraw stage
+			this.mesh = mesh;
+			this.hide();
+			this.object.add(this.mesh);
+			this.parent.scene.add(this.object);
+			this.parent.changed(); // redraw stage
 		}
 		else {
 			// first time we read this geometry
-			var loader = new THREE.JSONLoader();
+			var loader = new THREE.JSONLoader(), myself = this;
 			loader.load(costume.url, function(geometry) {
 				var color = new THREE.Color(myself.color.r/255, 
 											myself.color.g/255, 
@@ -2401,34 +2403,41 @@ SpriteMorph.prototype.wearCostume = function (costume) {
 				myself.hide(); // hide the 2D image
 				myself.parent.scene.add(myself.object);
 				myself.parent.changed(); // redraw stage
-				// myself.parent.parent.spriteBar.changed(); // TODO: spriteBar to redraw for the 3D switch
-				// console.log("[" + Date.now() + "] 3D costume finished loading!" );				
+
+				costume.geometry = geometry;
+				
+				// console.log("[" + Date.now() + "] 3D costume finished loading!" );
 			});
 		}
 		this.costume = costume;
-		return;
 	}
-
-    var x = this.xPosition ? this.xPosition() : null,
+	else {
+		var x = this.xPosition ? this.xPosition() : null,
         y = this.yPosition ? this.yPosition() : null,
         isWarped = this.isWarped;
-    if (isWarped) {
-        this.endWarp();
-    }
-    this.changed();
-    this.costume = costume;
-    this.drawNew();
-    this.changed();
-    if (isWarped) {
-        this.startWarp();
-    }
-    if (x !== null) {
-        this.silentGotoXY(x, y, true); // just me
-    }
-    if (this.positionTalkBubble) { // the stage doesn't talk
-        this.positionTalkBubble();
-    }
-    this.version = Date.now();
+		if (isWarped) {
+			this.endWarp();
+		}
+		this.changed();
+		this.costume = costume;
+		this.drawNew();
+		this.changed();
+		if (isWarped) {
+			this.startWarp();
+		}
+		if (x !== null) {
+			this.silentGotoXY(x, y, true); // just me
+		}
+		if (this.positionTalkBubble) { // the stage doesn't talk
+			this.positionTalkBubble();
+		}
+		this.version = Date.now();
+	}
+
+	// if (this.costume && this.costume.is3dSwitchable != costume.is3dSwitchable) {
+	// 	// update spriteBar
+	// 	this.parentThatIsA(IDE_Morph).selectSprite(this);
+	// }
 };
 
 SpriteMorph.prototype.getCostumeIdx = function () {
@@ -2515,17 +2524,16 @@ SpriteMorph.prototype.addTexture = function (texture) {
 };
 
 SpriteMorph.prototype.wearTexture = function (texture) {
-	var myself = this;
-
-	if (this.costume instanceof Costume3D) {
-		var map = THREE.ImageUtils.loadTexture(texture.url);
-		var color = new THREE.Color(this.color.r/255, this.color.g/255, this.color.b/255);	
-		var mesh = new THREE.Mesh(this.geometry, 
+	if (this.costume && this.costume.is3D) {
+		var map = THREE.ImageUtils.loadTexture(texture.url),
+			color = new THREE.Color(this.color.r/255, this.color.g/255, this.color.b/255),
+			geometry = this.costume.geometry,
+			mesh = new THREE.Mesh(geometry, 
 								  new THREE.MeshPhongMaterial({map: map, 
 															   color: color,
 															   vertexColors: THREE.NoColors
 															  }));
-		var sphere = this.geometry.boundingSphere; // THREE.Sphere	
+		var sphere = geometry.boundingSphere; // THREE.Sphere	
 		mesh.position.set( -sphere.center.x, -sphere.center.y, -sphere.center.z );
 
 		this.object.remove(this.mesh);
@@ -2854,7 +2862,7 @@ SpriteMorph.prototype.setScale = function (percentage) {
 };
 
 SpriteMorph.prototype.setScale3D = function (scaleX, scaleY, scaleZ) {
-	if (this.costume instanceof Costume3D) {
+	if (this.costume && this.costume.is3D) {
 		this.object.scale.set(scaleX, scaleY, scaleZ);
 		this.parent.changed();
 	}
@@ -2866,6 +2874,10 @@ SpriteMorph.prototype.changeScale = function (delta) {
 
 SpriteMorph.prototype.toggle3D = function() {
 	// TODO: modify to use wearTexture()
+	if (!this.costume.is3dSwitchable) {
+		// Native 3D objects cannot toggle between 3D and 2D
+		return;
+	}
 
 	var width = this.costume.contents.width,
 		height = this.costume.contents.height;
@@ -2895,14 +2907,9 @@ SpriteMorph.prototype.toggle3D = function() {
 	// console.log("[" + Date.now() + "] 3D texture finished loading!" );
 	// this.texture = texture;
 
-	this.hasBecome3D = !this.hasBecome3D;
+	this.costume.is3D = !this.costume.is3D;
 
 }
-
-SpriteMorph.prototype.getHasBecome3D = function() {
-	return this.hasBecome3D;
-}
-
 
 // SpriteMorph graphic effects
 
@@ -3166,7 +3173,7 @@ SpriteMorph.prototype.faceToXY = function (x, y) {
 };
 
 SpriteMorph.prototype.point3D = function (degX, degY, degZ) {
-	if (this.costume instanceof Costume3D) {
+	if (this.costume && this.costume.is3D) {
 		this.object.rotation.x = radians(degX);
 		this.object.rotation.y = radians(degY);
 		this.object.rotation.z = radians(degZ);
@@ -3183,7 +3190,7 @@ SpriteMorph.prototype.turnLeft = function (degrees) {
 };
 
 SpriteMorph.prototype.turn3D = function (degX, degY, degZ) {
-	if (this.costume instanceof Costume3D) {
+	if (this.costume && this.costume.is3D) {
 		this.object.rotation.x += radians(degX);
 		this.object.rotation.y += radians(degY);
 		this.object.rotation.z += radians(degZ);
@@ -3216,7 +3223,7 @@ SpriteMorph.prototype.yPosition = function () {
 };
 
 SpriteMorph.prototype.zPosition = function () {
-	return  (this.costume instanceof Costume3D) ? this.object.position.z : 0;
+	return  (this.costume && this.costume.is3D) ? this.object.position.z : 0;
 }
 
 SpriteMorph.prototype.direction = function () {
@@ -3245,7 +3252,7 @@ SpriteMorph.prototype.gotoXY = function (x, y, justMe) {
 };
 
 SpriteMorph.prototype.gotoXYZ = function (x, y, z, justMe) {
-	if (this.costume instanceof Costume3D) {
+	if (this.costume && this.costume.is3D) {
 		this.setXPosition(x);
 		this.setYPosition(y);
 
@@ -3267,7 +3274,7 @@ SpriteMorph.prototype.silentGotoXY = function (x, y, justMe) {
 SpriteMorph.prototype.setXPosition = function (num) {
 	this.gotoXY(+num || 0, this.yPosition());
 
-	if (this.costume instanceof Costume3D) {
+	if (this.costume && this.costume.is3D) {
 		this.object.position.x = num;
 		this.parent.changed();
 	}
@@ -3276,7 +3283,7 @@ SpriteMorph.prototype.setXPosition = function (num) {
 SpriteMorph.prototype.changeXPosition = function (delta) {
     this.setXPosition(this.xPosition() + (+delta || 0));
 
-	if (this.costume instanceof Costume3D) {
+	if (this.costume && this.costume.is3D) {
 		this.object.position.x += delta;
 		this.parent.changed();
 	}
@@ -3285,7 +3292,7 @@ SpriteMorph.prototype.changeXPosition = function (delta) {
 SpriteMorph.prototype.setYPosition = function (num) {
     this.gotoXY(this.yPosition(), +num || 0);
 
-	if (this.costume instanceof Costume3D) {
+	if (this.costume && this.costume.is3D) {
 		this.object.position.y = num;
 		this.parent.changed();
 	}
@@ -3294,21 +3301,21 @@ SpriteMorph.prototype.setYPosition = function (num) {
 SpriteMorph.prototype.changeYPosition = function (delta) {
     this.setYPosition(this.yPosition() + (+delta || 0));
 
-	if (this.costume instanceof Costume3D) {
+	if (this.costume && this.costume.is3D) {
 		this.object.position.y += delta;
 		this.parent.changed();
 	}
 };
 
 SpriteMorph.prototype.setZPosition = function (num) {
-	if (this.costume instanceof Costume3D) {
+	if (this.costume && this.costume.is3D) {
 		this.object.position.z = num;
 		this.parent.changed();
 	}
 };
 
 SpriteMorph.prototype.changeZPosition = function (delta) {
-	if (this.costume instanceof Costume3D) {
+	if (this.costume && this.costume.is3D) {
 		this.object.position.z += delta;
 		this.parent.changed();
 	}
@@ -5776,7 +5783,7 @@ SpriteBubbleMorph.prototype.fixLayout = function () {
 
 // Costume instance creation
 
-function Costume(canvas, name, url, rotationCenter) {
+function Costume(canvas, name, rotationCenter, url, is3D, is3dSwitchable) {
     this.contents = canvas || newCanvas();
     this.shrinkToFit(this.maxExtent);
     this.name = name || null;
@@ -5786,8 +5793,9 @@ function Costume(canvas, name, url, rotationCenter) {
 
 	// newly added for 3D
 	this.url = url;
+	this.is3D = is3D;
+	this.is3dSwitchable = is3dSwitchable
 	this.geometry = null;
-	// this.isSwitcheTo3D = false;
 }
 
 Costume.prototype.maxExtent = StageMorph.prototype.dimensions;
@@ -6058,42 +6066,6 @@ Costume.prototype.isTainted = function () {
     }
     return false;
 };
-
-
-// Costume3D /////////////////////////////////////////////////////////////
-
-/*
-  I am a costume containing a 3D object
-*/
-
-// Costume3D inherits from Costume:
-
-Costume3D.prototype = new Costume();
-Costume3D.prototype.constructor = Costume3D;
-Costume3D.uber = Costume.prototype;
-
-// Costume3D instance creation
-
-function Costume3D(canvas, name, url, rotationCenter) {
-	this.contents = canvas; // do not create a new canvas here
-	this.name = name || null;
-	this.version = Date.now(); // for observer optimization
-	this.loaded = null; // for de-serialization only
-	this.url = url;
-	this.geometry = null;
-}
-
-Costume3D.prototype.toString = function () {
-	return 'a Costume3D(' + this.name + ')';
-};
-
-// Costume3D duplication
-// Costume3D flipping
-// Costume3D thumbnail
-Costume3D.prototype.thumbnail = function (extentPoint) {
-    var trg = newCanvas(extentPoint);
-	return trg;
-}
 
 
 // SVG_Costume /////////////////////////////////////////////////////////////

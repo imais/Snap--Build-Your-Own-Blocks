@@ -1133,8 +1133,10 @@ IDE_Morph.prototype.createSpriteBar = function () {
     this.spriteBar.add(checkbox);
 
 	// second checkbox for 2D SpriteMorph
-	if(this.currentSprite instanceof SpriteMorph &&
-	   !(this.currentSprite.costume instanceof Costume3D)) {
+	if(false && // disabled for now
+	   this.currentSprite instanceof SpriteMorph &&
+	   this.currentSprite.costume &&
+	   this.currentSprite.costume.is3dSwitchable) {
 		checkbox2 = new ToggleMorph(
 			'checkbox',
 			null,
@@ -1143,7 +1145,7 @@ IDE_Morph.prototype.createSpriteBar = function () {
 			},
 			'switch to 3D', // TODO: localize
 			function () {
-				return myself.currentSprite.getHasBecome3D();
+				myself.currentSprite.costume.is3D;
 			}
 		);
 		checkbox2.label.isBold = false;
@@ -1614,7 +1616,10 @@ IDE_Morph.prototype.droppedImage = function (aCanvas, name, url) {
     var costume = new Costume(
         aCanvas,
         name ? name.split('.')[0] : '', // up to period
-		url
+		null,
+		url,
+		false, // is3D
+		true   // is3dSwitchable
     );
 
     if (costume.isTainted()) {
@@ -1636,13 +1641,18 @@ IDE_Morph.prototype.droppedImage = function (aCanvas, name, url) {
     this.currentSprite.wearCostume(costume);
     this.spriteBar.tabBar.tabTo('costumes');
     this.hasChangedMedia = true;
+
+    this.selectSprite(this.currentSprite); // do this to call createSpriteBar()
 };
 
 IDE_Morph.prototype.dropped3dObject = function (name, url) {
-    var costume = new Costume3D(
+    var costume = new Costume(
         null, // no canvas for 3D costumes
         name ? name.split('.')[0] : '', // up to period
-		url
+		null, // rotation center
+		url,
+		true, // is3D
+		false // is3dSwitchable
     );
 
     this.currentSprite.addCostume(costume);

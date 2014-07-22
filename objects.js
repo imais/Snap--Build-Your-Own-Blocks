@@ -16,7 +16,7 @@
     it under the terms of the GNU Affero General Public License as
     published by the Free Software Foundation, either version 3 of
     the License, or (at your option) any later version.
-g
+
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -2444,11 +2444,6 @@ SpriteMorph.prototype.wearCostume = function (costume) {
 		}
 		this.version = Date.now();
 	}
-
-	// if (this.costume && this.costume.is3dSwitchable != costume.is3dSwitchable) {
-	// 	// update spriteBar
-	// 	this.parentThatIsA(IDE_Morph).selectSprite(this);
-	// }
 };
 
 SpriteMorph.prototype.getCostumeIdx = function () {
@@ -2903,8 +2898,16 @@ SpriteMorph.prototype.toggle3D = function() {
 		height = this.costume.contents.height;
 
 		if (!this.costume.geometry) {
-			// TODO: read the texture just as we do it in wearTexture()
-			this.costume.map = THREE.ImageUtils.loadTexture(this.costume.url);
+			if (this.costume.url) {
+				// 2D costumes
+				this.costume.map = THREE.ImageUtils.loadTexture(this.costume.url);
+			}
+			else {
+				// Painted costumes
+				this.costume.map = new THREE.Texture(this.costume.contents);
+			}
+			width = this.costume.contents.width;
+			height = this.costume.contents.height;
 			this.costume.geometry = new THREE.PlaneGeometry(width, height);
 		}
 		var mesh = new THREE.Mesh(this.costume.geometry, 

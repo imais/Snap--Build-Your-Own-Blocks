@@ -1961,6 +1961,8 @@ IDE_Morph.prototype.paintNewSprite = function () {
     this.sprites.add(sprite);
     this.corral.addSprite(sprite);
     this.selectSprite(sprite);
+	cos.name = sprite.name;
+	cos.is3dSwitchable = true;
     cos.edit(
         this.world(),
         this,

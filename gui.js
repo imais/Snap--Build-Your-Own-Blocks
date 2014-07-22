@@ -1132,11 +1132,7 @@ IDE_Morph.prototype.createSpriteBar = function () {
     checkbox.drawNew();
     this.spriteBar.add(checkbox);
 
-	// second checkbox for 2D SpriteMorph
-	if(false && // disabled for now
-	   this.currentSprite instanceof SpriteMorph &&
-	   this.currentSprite.costume &&
-	   this.currentSprite.costume.is3dSwitchable) {
+	if (this.currentSprite instanceof SpriteMorph) {
 		checkbox2 = new ToggleMorph(
 			'checkbox',
 			null,
@@ -1145,7 +1141,8 @@ IDE_Morph.prototype.createSpriteBar = function () {
 			},
 			'switch to 3D', // TODO: localize
 			function () {
-				myself.currentSprite.costume.is3D;
+				return myself.currentSprite.costume ? 
+					myself.currentSprite.costume.is3D : false;
 			}
 		);
 		checkbox2.label.isBold = false;
@@ -1657,9 +1654,6 @@ IDE_Morph.prototype.dropped3dObject = function (name, url) {
 
     this.currentSprite.addCostume(costume);
     this.currentSprite.wearCostume(costume);
-	// this.currentSprite.freshPalette();
-	// this.palette.changed();
-	// this.palette.drawNew();
     this.spriteBar.tabBar.tabTo('costumes');
     this.hasChangedMedia = true;
 };
@@ -1672,11 +1666,8 @@ IDE_Morph.prototype.droppedTexture = function (name, url) {
 		url
     );
 
-    this.currentSprite.addTexture(texture);
+    // this.currentSprite.addTexture(texture);
     this.currentSprite.wearTexture(texture);
-	// this.currentSprite.freshPalette();
-	// this.palette.changed();
-	// this.palette.drawNew();
     this.spriteBar.tabBar.tabTo('costumes');
     this.hasChangedMedia = true;
 };

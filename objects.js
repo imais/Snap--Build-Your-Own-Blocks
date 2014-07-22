@@ -16,7 +16,7 @@
     it under the terms of the GNU Affero General Public License as
     published by the Free Software Foundation, either version 3 of
     the License, or (at your option) any later version.
-
+g
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -2364,21 +2364,32 @@ SpriteMorph.prototype.wearCostume = function (costume) {
 		this.parent.changed(); // redraw stage
 	}
 
-	if (costume.is3D) {
+	if (costume && costume.is3D) { // if (costume == null), that means a Turtle
 		if (costume.geometry != null) {
 			// we have loaded a 3D geometry already
 			var color = new THREE.Color(this.color.r/255, 
 										this.color.g/255, 
-										this.color.b/255);
-			var material = new THREE.MeshLambertMaterial({color: color}),
-			mesh = new THREE.Mesh(costume.geometry, material),
+										this.color.b/255),
+				material, mesh, sphere;
+
+			if (costume.map) {
+				if (costume.geometry instanceof THREE.PlaneGeometry) {
+					material = new THREE.MeshPhongMaterial({map: costume.map, side: THREE.DoubleSide});
+				}
+				else {
+					material = new THREE.MeshPhongMaterial({map: costume.map, color: color});
+				}
+			}
+			else {
+				material = new THREE.MeshLambertMaterial({color: color});
+			}
+			mesh = new THREE.Mesh(costume.geometry, material);
 			sphere = costume.geometry.boundingSphere; // THREE.Sphere
 			mesh.position.set(-sphere.center.x, -sphere.center.y, -sphere.center.z);
 
 			this.mesh = mesh;
 			this.hide();
 			this.object.add(this.mesh);
-			this.parent.scene.add(this.object);
 			this.parent.changed(); // redraw stage
 		}
 		else {
@@ -2516,12 +2527,12 @@ SpriteMorph.prototype.reportCostumes = function () {
 
 // SpriteMorph texture management
 
-SpriteMorph.prototype.addTexture = function (texture) {
-    if (!texture.name) {
-        texture.name = 'texture' + (this.textures.length() + 1);
-    }
-	this.textures.add(texture);
-};
+// SpriteMorph.prototype.addTexture = function (texture) {
+//     if (!texture.name) {
+//         texture.name = 'texture' + (this.textures.length() + 1);
+//     }
+// 	this.textures.add(texture);
+// };
 
 SpriteMorph.prototype.wearTexture = function (texture) {
 	if (this.costume && this.costume.is3D) {
@@ -2543,7 +2554,7 @@ SpriteMorph.prototype.wearTexture = function (texture) {
 		// console.log("[" + Date.now() + "] 3D texture finished loading!" );
 
 		this.texture = texture;
-		// this.texture.map = map; // TODO: do this to avoid reloading
+		this.costume.map = map;
 		return;
 	}
 };
@@ -2873,42 +2884,52 @@ SpriteMorph.prototype.changeScale = function (delta) {
 };
 
 SpriteMorph.prototype.toggle3D = function() {
-	// TODO: modify to use wearTexture()
-	if (!this.costume.is3dSwitchable) {
+	if (this.costume == null || !this.costume.is3dSwitchable) {
 		// Native 3D objects cannot toggle between 3D and 2D
 		return;
 	}
 
-	var width = this.costume.contents.width,
+	if (this.costume.is3D) {
+		// 3D -> 2D
+		this.object.remove(this.mesh); // object & mesh must exist
+		this.parent.changed();
+		this.show(); // show the 2D image
+		this.costume.is3D = false;
+	}
+	else {
+		// 2D -> 3D
+		var width = this.costume.contents.width,
 		height = this.costume.contents.height;
 
-	var map = THREE.ImageUtils.loadTexture(this.costume.url);	
-	this.geometry = new THREE.PlaneGeometry(width, height);
-	var mesh = new THREE.Mesh(this.geometry, new THREE.MeshPhongMaterial({map: map, 
-																		  side: THREE.DoubleSide}));
-	mesh.position.set( -width/2, -height/2, 0 );
+		if (!this.costume.geometry) {
+			this.costume.map = THREE.ImageUtils.loadTexture(this.costume.url);	
+			this.costume.geometry = new THREE.PlaneGeometry(width, height);
+		}
+		var mesh = new THREE.Mesh(this.costume.geometry, 
+								  new THREE.MeshPhongMaterial({map: this.costume.map, 
+															   side: THREE.DoubleSide}));
+		mesh.position.set( -width/2, -height/2, 0 );
 
-	if (!this.object) {
-		this.object = new THREE.Object3D();
+		if (!this.object) {
+			this.object = new THREE.Object3D();
+		}
+		if (this.mesh) {
+			this.object.remove(this.mesh);
+		}
+		this.object.add(mesh);
+		this.mesh = mesh;
+		this.object.position.x = this.xPosition();
+		this.object.position.y = this.yPosition();
+		this.object.position.z = this.zPosition();
+
+		this.hide(); // hide the 2D image
+		this.parent.scene.add(this.object);
+		this.parent.changed();
+
+		// console.log("[" + Date.now() + "] 3D texture finished loading!" );
+		// this.texture = texture;
+		this.costume.is3D = true;
 	}
-	if (this.mesh) {
-		this.object.remove(this.mesh);
-	}
-	this.object.add( mesh );
-	this.object.position.x = this.xPosition();
-	this.object.position.y = this.yPosition();
-	this.object.position.z = 0;
-	this.mesh = mesh;
-	
-	this.hide();  // hide the 2D image
-	this.parent.scene.add(this.object);
-	this.parent.changed();
-
-	// console.log("[" + Date.now() + "] 3D texture finished loading!" );
-	// this.texture = texture;
-
-	this.costume.is3D = !this.costume.is3D;
-
 }
 
 // SpriteMorph graphic effects
@@ -5796,6 +5817,7 @@ function Costume(canvas, name, rotationCenter, url, is3D, is3dSwitchable) {
 	this.is3D = is3D;
 	this.is3dSwitchable = is3dSwitchable
 	this.geometry = null;
+	this.map = null;
 }
 
 Costume.prototype.maxExtent = StageMorph.prototype.dimensions;

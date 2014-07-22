@@ -2536,26 +2536,27 @@ SpriteMorph.prototype.reportCostumes = function () {
 
 SpriteMorph.prototype.wearTexture = function (texture) {
 	if (this.costume && this.costume.is3D) {
-		var map = THREE.ImageUtils.loadTexture(texture.url),
-			color = new THREE.Color(this.color.r/255, this.color.g/255, this.color.b/255),
-			geometry = this.costume.geometry,
-			mesh = new THREE.Mesh(geometry, 
-								  new THREE.MeshPhongMaterial({map: map, 
-															   color: color,
-															   vertexColors: THREE.NoColors
-															  }));
-		var sphere = geometry.boundingSphere; // THREE.Sphere	
-		mesh.position.set( -sphere.center.x, -sphere.center.y, -sphere.center.z );
+		var color = new THREE.Color(this.color.r/255, this.color.g/255, this.color.b/255),
+			geometry = this.costume.geometry, myself = this;
 
-		this.object.remove(this.mesh);
-		this.object.add(mesh);
-		this.mesh = mesh;
-		this.parent.changed();
-		// console.log("[" + Date.now() + "] 3D texture finished loading!" );
+		THREE.ImageUtils.loadTexture(texture.url, new THREE.UVMapping(), function(map) {
+			// do the following after the texture is loaded
+			var material = new THREE.MeshPhongMaterial({map: map, 
+														color: color,
+														vertexColors: THREE.NoColors});
+			var mesh = new THREE.Mesh(geometry, material);
 
-		this.texture = texture;
-		this.costume.map = map;
-		return;
+			var sphere = geometry.boundingSphere; // THREE.Sphere	
+			mesh.position.set( -sphere.center.x, -sphere.center.y, -sphere.center.z );
+
+			myself.object.remove(myself.mesh);
+			myself.object.add(mesh);
+			myself.mesh = mesh;
+			myself.parent.changed();
+
+			myself.texture = texture;
+			myself.costume.map = map;
+		});
 	}
 };
 
@@ -2902,7 +2903,8 @@ SpriteMorph.prototype.toggle3D = function() {
 		height = this.costume.contents.height;
 
 		if (!this.costume.geometry) {
-			this.costume.map = THREE.ImageUtils.loadTexture(this.costume.url);	
+			// TODO: read the texture just as we do it in wearTexture()
+			this.costume.map = THREE.ImageUtils.loadTexture(this.costume.url);
 			this.costume.geometry = new THREE.PlaneGeometry(width, height);
 		}
 		var mesh = new THREE.Mesh(this.costume.geometry, 
@@ -2926,8 +2928,6 @@ SpriteMorph.prototype.toggle3D = function() {
 		this.parent.scene.add(this.object);
 		this.parent.changed();
 
-		// console.log("[" + Date.now() + "] 3D texture finished loading!" );
-		// this.texture = texture;
 		this.costume.is3D = true;
 	}
 }

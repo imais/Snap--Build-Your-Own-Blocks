@@ -42,7 +42,7 @@
         Costume
             SVG_Costume
         CostumeEditorMorph
-		Texture
+        Texture
         Sound
         Note
         CellMorph
@@ -224,12 +224,12 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: 'turn %counterclockwise %n degrees',
             defaults: [15]
         },
-		turn3D: {
-			type: 'command',
-			category: 'motion',
-			spec: 'turn x: %n y: %n z: %n degrees',
-			defaults: [0, 0, 0]
-		},
+        turn3D: {
+            type: 'command',
+            category: 'motion',
+            spec: 'turn x: %n y: %n z: %n degrees',
+            defaults: [0, 0, 0]
+        },
         setHeading: {
             type: 'command',
             category: 'motion',
@@ -240,24 +240,24 @@ SpriteMorph.prototype.initBlocks = function () {
             category: 'motion',
             spec: 'point towards %dst'
         },
-		point3D: {
-			type: 'command',
-			category: 'motion',
-			spec: 'point x: %n y: %n z: %n degrees',
-			defaults: [0, 0, 0]
-		},
+        point3D: {
+            type: 'command',
+            category: 'motion',
+            spec: 'point x: %n y: %n z: %n degrees',
+            defaults: [0, 0, 0]
+        },
         gotoXY: {
             type: 'command',
             category: 'motion',
             spec: 'go to x: %n y: %n',
             defaults: [0, 0]
         },
-		gotoXYZ: {
-			type: 'command',
-			category: 'motion',
-			spec: 'go to x: %n y: %n z: %n',
-			defaults: [0, 0, 0]
-		},
+        gotoXYZ: {
+            type: 'command',
+            category: 'motion',
+            spec: 'go to x: %n y: %n z: %n',
+            defaults: [0, 0, 0]
+        },
         doGotoObject: {
             type: 'command',
             category: 'motion',
@@ -293,18 +293,18 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: 'set y to %n',
             defaults: [0]
         },
-		changeZPosition: {
-			type: 'command',
-			category: 'motion',
-			spec: 'change z by %n',
-			defaults: [10]
-		},
-		setZPosition: {
-			type: 'command',
-			category: 'motion',
-			spec: 'set z to %n',
-			defaults: [0]
-		},
+        changeZPosition: {
+            type: 'command',
+            category: 'motion',
+            spec: 'change z by %n',
+            defaults: [10]
+        },
+        setZPosition: {
+            type: 'command',
+            category: 'motion',
+            spec: 'set z to %n',
+            defaults: [0]
+        },
         bounceOffEdge: {
             type: 'command',
             category: 'motion',
@@ -320,11 +320,11 @@ SpriteMorph.prototype.initBlocks = function () {
             category: 'motion',
             spec: 'y position'
         },
-		zPosition: {
-			type: 'reporter',
-			category: 'motion',
-			spec: 'z position'
-		},
+        zPosition: {
+            type: 'reporter',
+            category: 'motion',
+            spec: 'z position'
+        },
         direction: {
             type: 'reporter',
             category: 'motion',
@@ -556,7 +556,7 @@ SpriteMorph.prototype.initBlocks = function () {
             category: 'pen',
             spec: 'pen up'
         },
-		setColor: {
+        setColor: {
             type: 'command',
             category: 'pen',
             spec: 'set pen color to %clr'
@@ -1303,20 +1303,20 @@ SpriteMorph.prototype.init = function (globals) {
     this.variables = new VariableFrame(globals || null, this);
     this.scripts = new ScriptsMorph(this);
     this.customBlocks = [];
-    this.costumes = new List();	
+    this.costumes = new List(); 
     this.costume = null;
-    this.textures = new List();	
+    this.textures = new List(); 
     this.texture = null;
-	this.sounds = new List();
+    this.sounds = new List();
     this.normalExtent = new Point(60, 60); // only for costume-less situation
     this.scale = 1;
     this.rotationStyle = 1; // 1 = full, 2 = left/right, 0 = off
     this.version = Date.now(); // for observer optimization
     this.isClone = false; // indicate a "temporary" Scratch-style clone
     this.cloneOriginName = '';
-	this.originalPixels = null;
-	this.colorChange = false; //Flag to check if color change has been applied
-	this.costumeColor = null;
+    this.originalPixels = null;
+    this.colorChange = false; //Flag to check if color change has been applied
+    this.costumeColor = null;
 
     // sprite nesting properties
     this.parts = []; // not serialized, only anchor (name)
@@ -1412,16 +1412,16 @@ SpriteMorph.prototype.drawNew = function () {
         ctx,
         handle;
 
-	if (this.costume && this.costume.is3D) {
-		// the 3D object will be rendered in StageMorph.drawOn() later
-		this.hide();
-		return;
-	}
-	else {
-		// show the 2D Sprite
-		this.show();
-	}
-	
+    if (this.costume && this.costume.is3D) {
+        // the 3D object will be rendered in StageMorph.drawOn() later
+        this.hide();
+        return;
+    }
+    else {
+        // show the 2D Sprite
+        this.show();
+    }
+    
     if (this.isWarped) {
         this.wantsRedraw = true;
         return;
@@ -1467,7 +1467,7 @@ SpriteMorph.prototype.drawNew = function () {
         ctx.scale(this.scale * stageScale, this.scale * stageScale);
         ctx.translate(shift.x, shift.y);
         ctx.rotate(radians(facing - 90));
-		ctx.drawImage(pic.contents, 0, 0);
+        ctx.drawImage(pic.contents, 0, 0);
 
         // adjust my position to the rotation
         this.setCenter(currentCenter, true); // just me
@@ -1505,14 +1505,14 @@ SpriteMorph.prototype.drawNew = function () {
         }
     }
     this.version = Date.now();
-	
-	this.originalPixels = this.image.getContext('2d').createImageData(this.width(), this.height());
-	this.originalPixels = this.image.getContext('2d').getImageData(0, 0, this.width(), this.height());
-	
-	//Check if color change has been applied earlier in script
-	if(this.colorChange){
-		this.changeCostumeColor(this.costumeColor);
-	}
+    
+    this.originalPixels = this.image.getContext('2d').createImageData(this.width(), this.height());
+    this.originalPixels = this.image.getContext('2d').getImageData(0, 0, this.width(), this.height());
+    
+    //Check if color change has been applied earlier in script
+    if(this.colorChange){
+        this.changeCostumeColor(this.costumeColor);
+    }
 };
 
 SpriteMorph.prototype.endWarp = function () {
@@ -1685,10 +1685,10 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('setHeading'));
         blocks.push(block('doFaceTowards'));
-		blocks.push(block('point3D'));
+        blocks.push(block('point3D'));
         blocks.push('-');
         blocks.push(block('gotoXY'));
-		blocks.push(block('gotoXYZ'));
+        blocks.push(block('gotoXYZ'));
         blocks.push(block('doGotoObject'));
         blocks.push(block('doGlide'));
         blocks.push('-');
@@ -1696,8 +1696,8 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('setXPosition'));
         blocks.push(block('changeYPosition'));
         blocks.push(block('setYPosition'));
-		blocks.push(block('changeZPosition'));
-		blocks.push(block('setZPosition'));
+        blocks.push(block('changeZPosition'));
+        blocks.push(block('setZPosition'));
         blocks.push('-');
         blocks.push(block('bounceOffEdge'));
         blocks.push('-');
@@ -1705,8 +1705,8 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('xPosition'));
         blocks.push(watcherToggle('yPosition'));
         blocks.push(block('yPosition'));
-		blocks.push(watcherToggle('zPosition'));
-		blocks.push(block('zPosition'));
+        blocks.push(watcherToggle('zPosition'));
+        blocks.push(block('zPosition'));
         blocks.push(watcherToggle('direction'));
         blocks.push(block('direction'));
 
@@ -2354,96 +2354,96 @@ SpriteMorph.prototype.addCostume = function (costume) {
     if (!costume.name) {
         costume.name = 'costume' + (this.costumes.length() + 1);
     }
-	this.costumes.add(costume);
+    this.costumes.add(costume);
 };
 
 SpriteMorph.prototype.wearCostume = function (costume) {
 
-	if (this.object && this.costume && costume != this.costume) {
-		this.object.remove(this.mesh);
-		this.parent.changed(); // redraw stage
-	}
+    if (this.object && this.costume && costume != this.costume) {
+        this.object.remove(this.mesh);
+        this.parent.changed(); // redraw stage
+    }
 
-	if (costume && costume.is3D) { // if (costume == null), that means a Turtle
-		if (costume.geometry != null) {
-			// we have loaded a 3D geometry already
-			var color = new THREE.Color(this.color.r/255, 
-										this.color.g/255, 
-										this.color.b/255),
-				material, mesh, sphere;
+    if (costume && costume.is3D) { // if (costume == null), that means a Turtle
+        if (costume.geometry != null) {
+            // we have loaded a 3D geometry already
+            var color = new THREE.Color(this.color.r/255, 
+                                        this.color.g/255, 
+                                        this.color.b/255),
+                material, mesh, sphere;
 
-			if (costume.map) {
-				if (costume.geometry instanceof THREE.PlaneGeometry) {
-					material = new THREE.MeshPhongMaterial({map: costume.map, side: THREE.DoubleSide});
-				}
-				else {
-					material = new THREE.MeshPhongMaterial({map: costume.map, color: color});
-				}
-			}
-			else {
-				material = new THREE.MeshLambertMaterial({color: color});
-			}
-			mesh = new THREE.Mesh(costume.geometry, material);
-			sphere = costume.geometry.boundingSphere; // THREE.Sphere
-			mesh.position.set(-sphere.center.x, -sphere.center.y, -sphere.center.z);
+            if (costume.map) {
+                if (costume.geometry instanceof THREE.PlaneGeometry) {
+                    material = new THREE.MeshPhongMaterial({map: costume.map, side: THREE.DoubleSide});
+                }
+                else {
+                    material = new THREE.MeshPhongMaterial({map: costume.map, color: color});
+                }
+            }
+            else {
+                material = new THREE.MeshLambertMaterial({color: color});
+            }
+            mesh = new THREE.Mesh(costume.geometry, material);
+            sphere = costume.geometry.boundingSphere; // THREE.Sphere
+            mesh.position.set(-sphere.center.x, -sphere.center.y, -sphere.center.z);
 
-			this.mesh = mesh;
-			this.hide();
-			this.object.add(this.mesh);
-			this.parent.changed(); // redraw stage
-		}
-		else {
-			// first time we read this geometry
-			var loader = new THREE.JSONLoader(), myself = this;
-			loader.load(costume.url, function(geometry) {
-				var color = new THREE.Color(myself.color.r/255, 
-											myself.color.g/255, 
-											myself.color.b/255);
-				var material = new THREE.MeshLambertMaterial({color: color}),
-					mesh = new THREE.Mesh(geometry, material),
-					sphere = geometry.boundingSphere; // THREE.Sphere
-				mesh.position.set(-sphere.center.x, -sphere.center.y, -sphere.center.z);
-				myself.mesh = mesh;
+            this.mesh = mesh;
+            this.hide();
+            this.object.add(this.mesh);
+            this.parent.changed(); // redraw stage
+        }
+        else {
+            // first time we read this geometry
+            var loader = new THREE.JSONLoader(), myself = this;
+            loader.load(costume.url, function(geometry) {
+                var color = new THREE.Color(myself.color.r/255, 
+                                            myself.color.g/255, 
+                                            myself.color.b/255);
+                var material = new THREE.MeshLambertMaterial({color: color}),
+                    mesh = new THREE.Mesh(geometry, material),
+                    sphere = geometry.boundingSphere; // THREE.Sphere
+                mesh.position.set(-sphere.center.x, -sphere.center.y, -sphere.center.z);
+                myself.mesh = mesh;
 
-				myself.object = new THREE.Object3D();
-				myself.object.add(myself.mesh);
-				myself.object.position.x = myself.xPosition();
-				myself.object.position.y = myself.yPosition();
-				myself.object.position.z = 0;
+                myself.object = new THREE.Object3D();
+                myself.object.add(myself.mesh);
+                myself.object.position.x = myself.xPosition();
+                myself.object.position.y = myself.yPosition();
+                myself.object.position.z = 0;
 
-				myself.hide(); // hide the 2D image
-				myself.parent.scene.add(myself.object);
-				myself.parent.changed(); // redraw stage
+                myself.hide(); // hide the 2D image
+                myself.parent.scene.add(myself.object);
+                myself.parent.changed(); // redraw stage
 
-				costume.geometry = geometry;
-				
-				// console.log("[" + Date.now() + "] 3D costume finished loading!" );
-			});
-		}
-		this.costume = costume;
-	}
-	else {
-		var x = this.xPosition ? this.xPosition() : null,
+                costume.geometry = geometry;
+                
+                // console.log("[" + Date.now() + "] 3D costume finished loading!" );
+            });
+        }
+        this.costume = costume;
+    }
+    else {
+        var x = this.xPosition ? this.xPosition() : null,
         y = this.yPosition ? this.yPosition() : null,
         isWarped = this.isWarped;
-		if (isWarped) {
-			this.endWarp();
-		}
-		this.changed();
-		this.costume = costume;
-		this.drawNew();
-		this.changed();
-		if (isWarped) {
-			this.startWarp();
-		}
-		if (x !== null) {
-			this.silentGotoXY(x, y, true); // just me
-		}
-		if (this.positionTalkBubble) { // the stage doesn't talk
-			this.positionTalkBubble();
-		}
-		this.version = Date.now();
-	}
+        if (isWarped) {
+            this.endWarp();
+        }
+        this.changed();
+        this.costume = costume;
+        this.drawNew();
+        this.changed();
+        if (isWarped) {
+            this.startWarp();
+        }
+        if (x !== null) {
+            this.silentGotoXY(x, y, true); // just me
+        }
+        if (this.positionTalkBubble) { // the stage doesn't talk
+            this.positionTalkBubble();
+        }
+        this.version = Date.now();
+    }
 };
 
 SpriteMorph.prototype.getCostumeIdx = function () {
@@ -2526,33 +2526,33 @@ SpriteMorph.prototype.reportCostumes = function () {
 //     if (!texture.name) {
 //         texture.name = 'texture' + (this.textures.length() + 1);
 //     }
-// 	this.textures.add(texture);
+//  this.textures.add(texture);
 // };
 
 SpriteMorph.prototype.wearTexture = function (texture) {
-	if (this.costume && this.costume.is3D) {
-		var color = new THREE.Color(this.color.r/255, this.color.g/255, this.color.b/255),
-			geometry = this.costume.geometry, myself = this;
+    if (this.costume && this.costume.is3D) {
+        var color = new THREE.Color(this.color.r/255, this.color.g/255, this.color.b/255),
+            geometry = this.costume.geometry, myself = this;
 
-		THREE.ImageUtils.loadTexture(texture.url, new THREE.UVMapping(), function(map) {
-			// do the following after the texture is loaded
-			var material = new THREE.MeshPhongMaterial({map: map, 
-														color: color,
-														vertexColors: THREE.NoColors});
-			var mesh = new THREE.Mesh(geometry, material);
+        THREE.ImageUtils.loadTexture(texture.url, new THREE.UVMapping(), function(map) {
+            // do the following after the texture is loaded
+            var material = new THREE.MeshPhongMaterial({map: map, 
+                                                        color: color,
+                                                        vertexColors: THREE.NoColors});
+            var mesh = new THREE.Mesh(geometry, material);
 
-			var sphere = geometry.boundingSphere; // THREE.Sphere	
-			mesh.position.set( -sphere.center.x, -sphere.center.y, -sphere.center.z );
+            var sphere = geometry.boundingSphere; // THREE.Sphere   
+            mesh.position.set( -sphere.center.x, -sphere.center.y, -sphere.center.z );
 
-			myself.object.remove(myself.mesh);
-			myself.object.add(mesh);
-			myself.mesh = mesh;
-			myself.parent.changed();
+            myself.object.remove(myself.mesh);
+            myself.object.add(mesh);
+            myself.mesh = mesh;
+            myself.parent.changed();
 
-			myself.texture = texture;
-			myself.costume.map = map;
-		});
-	}
+            myself.texture = texture;
+            myself.costume.map = map;
+        });
+    }
 };
 
 // SpriteMorph sound management
@@ -2642,7 +2642,7 @@ SpriteMorph.prototype.duplicate = function () {
 };
 
 SpriteMorph.prototype.remove = function () {
-	var ide = this.parentThatIsA(IDE_Morph);
+    var ide = this.parentThatIsA(IDE_Morph);
     if (ide) {
         ide.removeSprite(this);
     }
@@ -2869,10 +2869,10 @@ SpriteMorph.prototype.setScale = function (percentage) {
 };
 
 SpriteMorph.prototype.setScale3D = function (scaleX, scaleY, scaleZ) {
-	if (this.costume && this.costume.is3D) {
-		this.object.scale.set(scaleX, scaleY, scaleZ);
-		this.parent.changed();
-	}
+    if (this.costume && this.costume.is3D) {
+        this.object.scale.set(scaleX, scaleY, scaleZ);
+        this.parent.changed();
+    }
 }
 
 SpriteMorph.prototype.changeScale = function (delta) {
@@ -2882,68 +2882,68 @@ SpriteMorph.prototype.changeScale = function (delta) {
 // SpriteMorph misc 3D related functions
 
 SpriteMorph.prototype.toggle3D = function() {
-	if (this.costume == null || !this.costume.is3dSwitchable) {
-		// Native 3D objects cannot toggle between 3D and 2D
-		return;
-	}
+    if (this.costume == null || !this.costume.is3dSwitchable) {
+        // Native 3D objects cannot toggle between 3D and 2D
+        return;
+    }
 
-	if (this.costume.is3D) {
-		// 3D -> 2D
-		this.object.remove(this.mesh); // object & mesh must exist
-		this.parent.changed();
-		this.show(); // show the 2D image
-		this.costume.is3D = false;
-	}
-	else {
-		// 2D -> 3D
-		var width = this.costume.contents.width,
-		height = this.costume.contents.height;
+    if (this.costume.is3D) {
+        // 3D -> 2D
+        this.object.remove(this.mesh); // object & mesh must exist
+        this.parent.changed();
+        this.show(); // show the 2D image
+        this.costume.is3D = false;
+    }
+    else {
+        // 2D -> 3D
+        var width = this.costume.contents.width,
+        height = this.costume.contents.height;
 
-		if (!this.costume.geometry) {
-			if (this.costume.url) {
-				// 2D costumes
-				this.costume.map = THREE.ImageUtils.loadTexture(this.costume.url);
-			}
-			else {
-				// Painted costumes
-				this.costume.map = new THREE.Texture(this.costume.contents);
-			}
-			width = this.costume.contents.width;
-			height = this.costume.contents.height;
-			this.costume.geometry = new THREE.PlaneGeometry(width, height);
-		}
-		var mesh = new THREE.Mesh(this.costume.geometry, 
-								  new THREE.MeshPhongMaterial({map: this.costume.map, 
-															   side: THREE.DoubleSide}));
-		mesh.position.set( -width/2, -height/2, 0 );
+        if (!this.costume.geometry) {
+            if (this.costume.url) {
+                // 2D costumes
+                this.costume.map = THREE.ImageUtils.loadTexture(this.costume.url);
+            }
+            else {
+                // Painted costumes
+                this.costume.map = new THREE.Texture(this.costume.contents);
+            }
+            width = this.costume.contents.width;
+            height = this.costume.contents.height;
+            this.costume.geometry = new THREE.PlaneGeometry(width, height);
+        }
+        var mesh = new THREE.Mesh(this.costume.geometry, 
+                                  new THREE.MeshPhongMaterial({map: this.costume.map, 
+                                                               side: THREE.DoubleSide}));
+        mesh.position.set( -width/2, -height/2, 0 );
 
-		if (!this.object) {
-			this.object = new THREE.Object3D();
-		}
-		if (this.mesh) {
-			this.object.remove(this.mesh);
-		}
-		this.object.add(mesh);
-		this.mesh = mesh;
-		this.object.position.x = this.xPosition();
-		this.object.position.y = this.yPosition();
-		this.object.position.z = this.zPosition();
+        if (!this.object) {
+            this.object = new THREE.Object3D();
+        }
+        if (this.mesh) {
+            this.object.remove(this.mesh);
+        }
+        this.object.add(mesh);
+        this.mesh = mesh;
+        this.object.position.x = this.xPosition();
+        this.object.position.y = this.yPosition();
+        this.object.position.z = this.zPosition();
 
-		this.hide(); // hide the 2D image
-		this.parent.scene.add(this.object);
-		this.parent.changed();
+        this.hide(); // hide the 2D image
+        this.parent.scene.add(this.object);
+        this.parent.changed();
 
-		this.costume.is3D = true;
-	}
+        this.costume.is3D = true;
+    }
 }
 
 SpriteMorph.prototype.destroy3dSprite = function() {
-	if (this instanceof SpriteMorph &&
-		this.costume && // check to see if the sprite is a Turtle
-		this.costume.is3D) {
-		this.parent.scene.remove(this.object);
-		this.parent.changed();
-	}
+    if (this instanceof SpriteMorph &&
+        this.costume && // check to see if the sprite is a Turtle
+        this.costume.is3D) {
+        this.parent.scene.remove(this.object);
+        this.parent.changed();
+    }
 }
 
 // SpriteMorph graphic effects
@@ -3208,12 +3208,12 @@ SpriteMorph.prototype.faceToXY = function (x, y) {
 };
 
 SpriteMorph.prototype.point3D = function (degX, degY, degZ) {
-	if (this.costume && this.costume.is3D) {
-		this.object.rotation.x = radians(degX);
-		this.object.rotation.y = radians(degY);
-		this.object.rotation.z = radians(degZ);
-		this.parent.changed();
-	}
+    if (this.costume && this.costume.is3D) {
+        this.object.rotation.x = radians(degX);
+        this.object.rotation.y = radians(degY);
+        this.object.rotation.z = radians(degZ);
+        this.parent.changed();
+    }
 }
 
 SpriteMorph.prototype.turn = function (degrees) {
@@ -3225,12 +3225,12 @@ SpriteMorph.prototype.turnLeft = function (degrees) {
 };
 
 SpriteMorph.prototype.turn3D = function (degX, degY, degZ) {
-	if (this.costume && this.costume.is3D) {
-		this.object.rotation.x += radians(degX);
-		this.object.rotation.y += radians(degY);
-		this.object.rotation.z += radians(degZ);
-		this.parent.changed();
-	}
+    if (this.costume && this.costume.is3D) {
+        this.object.rotation.x += radians(degX);
+        this.object.rotation.y += radians(degY);
+        this.object.rotation.z += radians(degZ);
+        this.parent.changed();
+    }
 };
 
 SpriteMorph.prototype.xPosition = function () {
@@ -3258,7 +3258,7 @@ SpriteMorph.prototype.yPosition = function () {
 };
 
 SpriteMorph.prototype.zPosition = function () {
-	return  (this.costume && this.costume.is3D) ? this.object.position.z : 0;
+    return  (this.costume && this.costume.is3D) ? this.object.position.z : 0;
 }
 
 SpriteMorph.prototype.direction = function () {
@@ -3287,15 +3287,15 @@ SpriteMorph.prototype.gotoXY = function (x, y, justMe) {
 };
 
 SpriteMorph.prototype.gotoXYZ = function (x, y, z, justMe) {
-	if (this.costume && this.costume.is3D) {
-		this.setXPosition(x);
-		this.setYPosition(y);
+    if (this.costume && this.costume.is3D) {
+        this.setXPosition(x);
+        this.setYPosition(y);
 
-		this.object.position.x = x;
-		this.object.position.y = y;
-		this.object.position.z = z;
-		this.parent.changed();
-	}
+        this.object.position.x = x;
+        this.object.position.y = y;
+        this.object.position.z = z;
+        this.parent.changed();
+    }
 }
 
 SpriteMorph.prototype.silentGotoXY = function (x, y, justMe) {
@@ -3307,53 +3307,53 @@ SpriteMorph.prototype.silentGotoXY = function (x, y, justMe) {
 };
 
 SpriteMorph.prototype.setXPosition = function (num) {
-	this.gotoXY(+num || 0, this.yPosition());
+    this.gotoXY(+num || 0, this.yPosition());
 
-	if (this.costume && this.costume.is3D) {
-		this.object.position.x = num;
-		this.parent.changed();
-	}
+    if (this.costume && this.costume.is3D) {
+        this.object.position.x = num;
+        this.parent.changed();
+    }
 };
 
 SpriteMorph.prototype.changeXPosition = function (delta) {
     this.setXPosition(this.xPosition() + (+delta || 0));
 
-	if (this.costume && this.costume.is3D) {
-		this.object.position.x += delta;
-		this.parent.changed();
-	}
+    if (this.costume && this.costume.is3D) {
+        this.object.position.x += delta;
+        this.parent.changed();
+    }
 };
 
 SpriteMorph.prototype.setYPosition = function (num) {
     this.gotoXY(this.yPosition(), +num || 0);
 
-	if (this.costume && this.costume.is3D) {
-		this.object.position.y = num;
-		this.parent.changed();
-	}
+    if (this.costume && this.costume.is3D) {
+        this.object.position.y = num;
+        this.parent.changed();
+    }
 };
 
 SpriteMorph.prototype.changeYPosition = function (delta) {
     this.setYPosition(this.yPosition() + (+delta || 0));
 
-	if (this.costume && this.costume.is3D) {
-		this.object.position.y += delta;
-		this.parent.changed();
-	}
+    if (this.costume && this.costume.is3D) {
+        this.object.position.y += delta;
+        this.parent.changed();
+    }
 };
 
 SpriteMorph.prototype.setZPosition = function (num) {
-	if (this.costume && this.costume.is3D) {
-		this.object.position.z = num;
-		this.parent.changed();
-	}
+    if (this.costume && this.costume.is3D) {
+        this.object.position.z = num;
+        this.parent.changed();
+    }
 };
 
 SpriteMorph.prototype.changeZPosition = function (delta) {
-	if (this.costume && this.costume.is3D) {
-		this.object.position.z += delta;
-		this.parent.changed();
-	}
+    if (this.costume && this.costume.is3D) {
+        this.object.position.z += delta;
+        this.parent.changed();
+    }
 };
 
 SpriteMorph.prototype.glide = function (
@@ -3429,9 +3429,9 @@ SpriteMorph.prototype.allMessageNames = function () {
 };
 
 SpriteMorph.prototype.allHatBlocksFor = function (message) {
-	if(this instanceof SpriteMorph){
-		this.colorChange = false;
-	}
+    if(this instanceof SpriteMorph){
+        this.colorChange = false;
+    }
     return this.scripts.children.filter(function (morph) {
         var event;
         if (morph.selector) {
@@ -4199,9 +4199,9 @@ StageMorph.prototype.init = function (globals) {
     this.setColor(new Color(255, 255, 255));
     this.fps = this.frameRate;
 
-	// 3D
-	this.threedCanvas = null;
-	this.init3D();
+    // 3D
+    this.threedCanvas = null;
+    this.init3D();
 };
 
 // StageMorph scaling
@@ -4265,8 +4265,8 @@ StageMorph.prototype.drawNew = function () {
 };
 
 StageMorph.prototype.drawOn = function (aCanvas, aRect) {
-	// console.time('StageMorph.drawOn');
-	// console.profile('StageMorph.drawOn');
+    // console.time('StageMorph.drawOn');
+    // console.profile('StageMorph.drawOn');
 
     // make sure to draw the 3D objects and pen trails canvases as well
     var rectangle, area, delta, src, context, w, h, sl, st, ws, hs;
@@ -4289,7 +4289,7 @@ StageMorph.prototype.drawOn = function (aCanvas, aRect) {
         if (w < 1 || h < 1) {
             return null;
         }
-		// console.time('StageMorph drawImage - image');
+        // console.time('StageMorph drawImage - image');
         context.drawImage(
             this.image,
             src.left(),
@@ -4301,19 +4301,19 @@ StageMorph.prototype.drawOn = function (aCanvas, aRect) {
             w,
             h
         );
-		// console.timeEnd('StageMorph drawImage - image');
+        // console.timeEnd('StageMorph drawImage - image');
 
         ws = w / this.scale;
         hs = h / this.scale;
         context.save();
         context.scale(this.scale, this.scale);
         // 3d
-		// console.log("[" + Date.now() + "] StageMorph.drawOn()" );
-		// console.time('StageMorph renderer');
-		this.renderer.render(this.scene, this.camera);
-		// console.timeEnd('StageMorph renderer');
+        // console.log("[" + Date.now() + "] StageMorph.drawOn()" );
+        // console.time('StageMorph renderer');
+        this.renderer.render(this.scene, this.camera);
+        // console.timeEnd('StageMorph renderer');
 
-		// console.time('StageMorph drawImage - 3D');
+        // console.time('StageMorph drawImage - 3D');
         context.drawImage(
             this.get3dCanvas(),
             src.left() / this.scale,
@@ -4325,10 +4325,10 @@ StageMorph.prototype.drawOn = function (aCanvas, aRect) {
             ws,
             hs
         );
-		// console.timeEnd('StageMorph drawImage - 3D');
+        // console.timeEnd('StageMorph drawImage - 3D');
 
         // pen trails
-		// console.time('StageMorph drawImage - pen');
+        // console.time('StageMorph drawImage - pen');
         context.drawImage(
             this.penTrails(),
             src.left() / this.scale,
@@ -4341,10 +4341,10 @@ StageMorph.prototype.drawOn = function (aCanvas, aRect) {
             hs
         );
         context.restore();
-		// console.timeEnd('StageMorph drawImage - pen');
+        // console.timeEnd('StageMorph drawImage - pen');
     }
 
-	// console.timeEnd('StageMorph.drawOn');
+    // console.timeEnd('StageMorph.drawOn');
 };
 
 StageMorph.prototype.clearPenTrails = function () {
@@ -4423,38 +4423,38 @@ const THREEJS_CAMERA_DEFAULT_Y_POSITION = 50;
 const THREEJS_CAMERA_DEFAULT_Z_POSITION = 500;
 
 StageMorph.prototype.init3D = function () {
-	var canvas = this.get3dCanvas();
+    var canvas = this.get3dCanvas();
 
-	// var vFOV = 2 * Math.atan(canvas.height / (2 * THREEJS_CAMERA_Z_POSITION));
-	var vFOV = THREEJS_FIELD_OF_VIEW;
-	// var dist = canvas.height / (2 * Math.tan(radians(vFOV) / 2));
-	var dist = THREEJS_CAMERA_DEFAULT_Z_POSITION;
-	console.log("vFOV=" + vFOV + ", dist=" + dist);
-	var height = 2 * Math.tan(radians(vFOV / 2)) * dist;
-	var width = (canvas.width / canvas.height) * height;
-	console.log( "width=" + width + ", height=" + height);
+    // var vFOV = 2 * Math.atan(canvas.height / (2 * THREEJS_CAMERA_Z_POSITION));
+    var vFOV = THREEJS_FIELD_OF_VIEW;
+    // var dist = canvas.height / (2 * Math.tan(radians(vFOV) / 2));
+    var dist = THREEJS_CAMERA_DEFAULT_Z_POSITION;
+    console.log("vFOV=" + vFOV + ", dist=" + dist);
+    var height = 2 * Math.tan(radians(vFOV / 2)) * dist;
+    var width = (canvas.width / canvas.height) * height;
+    console.log( "width=" + width + ", height=" + height);
 
-	this.scene = new THREE.Scene();
+    this.scene = new THREE.Scene();
 
-	// camera
-	this.camera = new THREE.PerspectiveCamera(vFOV,
-											  canvas.width / canvas.height, 0.1, 10000);
-	this.camera.position.set(THREEJS_CAMERA_DEFAULT_X_POSITION, 
-							 THREEJS_CAMERA_DEFAULT_Y_POSITION,
-							 THREEJS_CAMERA_DEFAULT_Z_POSITION);
-	this.camera.lookAt({x:0, y:0, z:0});
-	this.scene.add(this.camera);
+    // camera
+    this.camera = new THREE.PerspectiveCamera(vFOV,
+                                              canvas.width / canvas.height, 0.1, 10000);
+    this.camera.position.set(THREEJS_CAMERA_DEFAULT_X_POSITION, 
+                             THREEJS_CAMERA_DEFAULT_Y_POSITION,
+                             THREEJS_CAMERA_DEFAULT_Z_POSITION);
+    this.camera.lookAt({x:0, y:0, z:0});
+    this.scene.add(this.camera);
 
-	// lighting
-	this.light = new THREE.PointLight( 0xFFFFFF );
-	this.light.position.x = 500;
-	this.light.position.y = 500;
-	this.light.position.z = 500;
-	this.scene.add(this.light);
+    // lighting
+    this.light = new THREE.PointLight( 0xFFFFFF );
+    this.light.position.x = 500;
+    this.light.position.y = 500;
+    this.light.position.z = 500;
+    this.scene.add(this.light);
 
-	// renderer
-	this.renderer = new THREE.CanvasRenderer({canvas: canvas});
-	this.renderer.setSize(canvas.width, canvas.height);
+    // renderer
+    this.renderer = new THREE.CanvasRenderer({canvas: canvas});
+    this.renderer.setSize(canvas.width, canvas.height);
 }
 
 StageMorph.prototype.get3dCanvas = function () {
@@ -4465,83 +4465,83 @@ StageMorph.prototype.get3dCanvas = function () {
 };
 
 StageMorph.prototype.getIsGridVisible = function () {
-	return (this.grid != null) ? this.grid.visible : false;
+    return (this.grid != null) ? this.grid.visible : false;
 }
 
 StageMorph.prototype.toggleGrid = function () {
-	if (this.grid) {
-		this.grid.visible = !this.grid.visible;
-		this.changed();
-		return;
-	}
+    if (this.grid) {
+        this.grid.visible = !this.grid.visible;
+        this.changed();
+        return;
+    }
 
-	var grid = new THREE.Geometry(), 
-	gridMaterial = new THREE.LineBasicMaterial({color:0xabcdef, opacity:0.5}),
-	step = 20,
-	size = 200;
-	for (var i = 0; i <= (size / step) * 2; i++) {
-		grid.vertices.push(new THREE.Vector3(- size, 0, i * step - size));
-		grid.vertices.push(new THREE.Vector3(  size, 0, i * step - size));
-		grid.vertices.push(new THREE.Vector3(i * step - size, 0,  -size));
-		grid.vertices.push(new THREE.Vector3(i * step - size, 0,   size));
-	}
+    var grid = new THREE.Geometry(), 
+    gridMaterial = new THREE.LineBasicMaterial({color:0xabcdef, opacity:0.5}),
+    step = 20,
+    size = 200;
+    for (var i = 0; i <= (size / step) * 2; i++) {
+        grid.vertices.push(new THREE.Vector3(- size, 0, i * step - size));
+        grid.vertices.push(new THREE.Vector3(  size, 0, i * step - size));
+        grid.vertices.push(new THREE.Vector3(i * step - size, 0,  -size));
+        grid.vertices.push(new THREE.Vector3(i * step - size, 0,   size));
+    }
 
-	var xzAxis = new THREE.Geometry(),
-	xzAxisMaterial = new THREE.LineBasicMaterial({color:0xabcdef, opacity:1.0, linewidth:2});
-	xzAxis.vertices.push(new THREE.Vector3(0, 0, -size));
-	xzAxis.vertices.push(new THREE.Vector3(0, 0,  size));
-	xzAxis.vertices.push(new THREE.Vector3(-size, 0,  0));
-	xzAxis.vertices.push(new THREE.Vector3( size, 0,  0));
+    var xzAxis = new THREE.Geometry(),
+    xzAxisMaterial = new THREE.LineBasicMaterial({color:0xabcdef, opacity:1.0, linewidth:2});
+    xzAxis.vertices.push(new THREE.Vector3(0, 0, -size));
+    xzAxis.vertices.push(new THREE.Vector3(0, 0,  size));
+    xzAxis.vertices.push(new THREE.Vector3(-size, 0,  0));
+    xzAxis.vertices.push(new THREE.Vector3( size, 0,  0));
 
-	var yAxis = new THREE.Geometry(),
-	yAxisMaterial = new THREE.LineDashedMaterial({color:0xabcdef, opacity:1.0, linewidth:4,
-												  dashSize:2, gapSize:20});
-	yAxis.vertices.push(new THREE.Vector3(0, -size * 4/5, 0));
-	yAxis.vertices.push(new THREE.Vector3(0,  size * 4/5, 0));
+    var yAxis = new THREE.Geometry(),
+    yAxisMaterial = new THREE.LineDashedMaterial({color:0xabcdef, opacity:1.0, linewidth:4,
+                                                  dashSize:2, gapSize:20});
+    yAxis.vertices.push(new THREE.Vector3(0, -size * 4/5, 0));
+    yAxis.vertices.push(new THREE.Vector3(0,  size * 4/5, 0));
 
-	var textX = new THREE.TextGeometry("X", 
-									   {size:10, height:2, curveSegments:2, 
-										font:"helvetiker"}),
-	textY = new THREE.TextGeometry("Y",
-								   {size:10, height:2, curveSegments:2, 
-									font:"helvetiker"}),
-	textZ = new THREE.TextGeometry("Z", 
-								   {size:10, height:2, curveSegments:2,
-									font:"helvetiker"});
-	var textXMaterial = new THREE.MeshBasicMaterial({color: 0xaa0000, overdraw: true}),
-	textYMaterial = new THREE.MeshBasicMaterial({color: 0x00aa00, overdraw: true}),
-	textZMaterial = new THREE.MeshBasicMaterial({color: 0x0000aa, overdraw: true});
-	var textXMesh = new THREE.Mesh(textX, textXMaterial),
-	textYMesh = new THREE.Mesh(textY, textYMaterial),
-	textZMesh = new THREE.Mesh(textZ, textZMaterial);
+    var textX = new THREE.TextGeometry("X", 
+                                       {size:10, height:2, curveSegments:2, 
+                                        font:"helvetiker"}),
+    textY = new THREE.TextGeometry("Y",
+                                   {size:10, height:2, curveSegments:2, 
+                                    font:"helvetiker"}),
+    textZ = new THREE.TextGeometry("Z", 
+                                   {size:10, height:2, curveSegments:2,
+                                    font:"helvetiker"});
+    var textXMaterial = new THREE.MeshBasicMaterial({color: 0xaa0000, overdraw: true}),
+    textYMaterial = new THREE.MeshBasicMaterial({color: 0x00aa00, overdraw: true}),
+    textZMaterial = new THREE.MeshBasicMaterial({color: 0x0000aa, overdraw: true});
+    var textXMesh = new THREE.Mesh(textX, textXMaterial),
+    textYMesh = new THREE.Mesh(textY, textYMaterial),
+    textZMesh = new THREE.Mesh(textZ, textZMaterial);
 
-	textX.computeBoundingBox();
-	textXMesh.position = {x: size + step, 
-						  y: 0, 
-						  z: textX.boundingBox.center().y};
-	textXMesh.rotation.x = radians(-90);
+    textX.computeBoundingBox();
+    textXMesh.position = {x: size + step, 
+                          y: 0, 
+                          z: textX.boundingBox.center().y};
+    textXMesh.rotation.x = radians(-90);
 
-	textY.computeBoundingBox();
-	textYMesh.position = {x:-textY.boundingBox.center().x, 
-						  y: size * 4/5 + step, 
-						  z:-textY.boundingBox.center().z};
+    textY.computeBoundingBox();
+    textYMesh.position = {x:-textY.boundingBox.center().x, 
+                          y: size * 4/5 + step, 
+                          z:-textY.boundingBox.center().z};
 
-	textZ.computeBoundingBox();
-	textZMesh.position = {x:-textZ.boundingBox.center().x,
-						  y: 0, 
-						  z:size + step};
-	textZMesh.rotation.x = radians(-90);
+    textZ.computeBoundingBox();
+    textZMesh.position = {x:-textZ.boundingBox.center().x,
+                          y: 0, 
+                          z:size + step};
+    textZMesh.rotation.x = radians(-90);
 
-	this.grid = new THREE.Object3D();
-	this.grid.add(new THREE.Line(grid, gridMaterial, THREE.LinePieces));
-	this.grid.add(new THREE.Line(xzAxis, xzAxisMaterial, THREE.LinePieces));
-	this.grid.add(new THREE.Line(yAxis, yAxisMaterial, THREE.LinePieces));
-	this.grid.add(textXMesh);
-	this.grid.add(textYMesh);
-	this.grid.add(textZMesh);
-	this.scene.add(this.grid);
-	
-	this.changed();
+    this.grid = new THREE.Object3D();
+    this.grid.add(new THREE.Line(grid, gridMaterial, THREE.LinePieces));
+    this.grid.add(new THREE.Line(xzAxis, xzAxisMaterial, THREE.LinePieces));
+    this.grid.add(new THREE.Line(yAxis, yAxisMaterial, THREE.LinePieces));
+    this.grid.add(textXMesh);
+    this.grid.add(textYMesh);
+    this.grid.add(textZMesh);
+    this.scene.add(this.grid);
+    
+    this.changed();
 }
 
 
@@ -5448,68 +5448,68 @@ StageMorph.prototype.clearEffects
     = SpriteMorph.prototype.clearEffects;
 
 StageMorph.prototype.setCameraPosition = function(x, y, z) {
-	// TODO: check if there is at least one 3D object
-	this.camera.position.x = x;
-	this.camera.position.y = y;
-	this.camera.position.z = z;
-	this.camera.lookAt({x:0, y:0, z:0});
-	this.changed();
+    // TODO: check if there is at least one 3D object
+    this.camera.position.x = x;
+    this.camera.position.y = y;
+    this.camera.position.z = z;
+    this.camera.lookAt({x:0, y:0, z:0});
+    this.changed();
 }
 
 StageMorph.prototype.changeCameraXPosition = function(delta) {
-	this.camera.position.x += delta;
-	this.camera.lookAt({x:0, y:0, z:0});
-	this.changed();
+    this.camera.position.x += delta;
+    this.camera.lookAt({x:0, y:0, z:0});
+    this.changed();
 }
 
 StageMorph.prototype.changeCameraYPosition = function(delta) {
-	this.camera.position.y += delta;
-	this.camera.lookAt({x:0, y:0, z:0});
-	this.changed();
+    this.camera.position.y += delta;
+    this.camera.lookAt({x:0, y:0, z:0});
+    this.changed();
 }
 
 StageMorph.prototype.changeCameraZPosition = function(delta) {
-	this.camera.position.z += delta;
-	this.camera.lookAt({x:0, y:0, z:0});
-	this.changed();
+    this.camera.position.z += delta;
+    this.camera.lookAt({x:0, y:0, z:0});
+    this.changed();
 }
 
 StageMorph.prototype.turnCameraAroundXAxis = function(deg) {
-	var y = this.camera.position.y, z = this.camera.position.z,
-		radius = Math.sqrt(Math.pow(y, 2) + Math.pow(z, 2)),
-		theta = Math.acos(z / radius);
-	
-	if (0 < y)
-		theta = 2 * Math.PI - theta;
+    var y = this.camera.position.y, z = this.camera.position.z,
+        radius = Math.sqrt(Math.pow(y, 2) + Math.pow(z, 2)),
+        theta = Math.acos(z / radius);
+    
+    if (0 < y)
+        theta = 2 * Math.PI - theta;
 
-	this.camera.position.y = radius * Math.sin(theta + radians(deg)) * (-1);
-	this.camera.position.z = radius * Math.cos(theta + radians(deg));
-	this.camera.lookAt({x:0, y:0, z:0});
-	console.log("camera.position={" + 
-				this.camera.position.x + ", " + 
-				this.camera.position.y + ", " + 
-				this.camera.position.z + "}, theta=" + 
-				degrees(theta));
-	this.changed();
+    this.camera.position.y = radius * Math.sin(theta + radians(deg)) * (-1);
+    this.camera.position.z = radius * Math.cos(theta + radians(deg));
+    this.camera.lookAt({x:0, y:0, z:0});
+    console.log("camera.position={" + 
+                this.camera.position.x + ", " + 
+                this.camera.position.y + ", " + 
+                this.camera.position.z + "}, theta=" + 
+                degrees(theta));
+    this.changed();
 }
 
 StageMorph.prototype.turnCameraAroundYAxis = function(deg) {
-	var x = this.camera.position.x, z = this.camera.position.z,
-		radius = Math.sqrt(Math.pow(x, 2) + Math.pow(z, 2)),
-		theta = Math.acos(z / radius);
-	
-	if (x < 0)
-		theta = 2 * Math.PI - theta;
+    var x = this.camera.position.x, z = this.camera.position.z,
+        radius = Math.sqrt(Math.pow(x, 2) + Math.pow(z, 2)),
+        theta = Math.acos(z / radius);
+    
+    if (x < 0)
+        theta = 2 * Math.PI - theta;
 
-	this.camera.position.x = radius * Math.sin(theta + radians(deg));
-	this.camera.position.z = radius * Math.cos(theta + radians(deg));
-	this.camera.lookAt({x:0, y:0, z:0});
-	console.log("camera.position={" + 
-				this.camera.position.x + ", " + 
-				this.camera.position.y + ", " + 
-				this.camera.position.z + "}, theta=" + 
-				degrees(theta));
-	this.changed();
+    this.camera.position.x = radius * Math.sin(theta + radians(deg));
+    this.camera.position.z = radius * Math.cos(theta + radians(deg));
+    this.camera.lookAt({x:0, y:0, z:0});
+    console.log("camera.position={" + 
+                this.camera.position.x + ", " + 
+                this.camera.position.y + ", " + 
+                this.camera.position.z + "}, theta=" + 
+                degrees(theta));
+    this.changed();
 }
 
 // StageMorph sound management
@@ -5826,12 +5826,12 @@ function Costume(canvas, name, rotationCenter, url, is3D, is3dSwitchable) {
     this.version = Date.now(); // for observer optimization
     this.loaded = null; // for de-serialization only
 
-	// newly added for 3D
-	this.url = url;
-	this.is3D = is3D;
-	this.is3dSwitchable = is3dSwitchable
-	this.geometry = null;
-	this.map = null;
+    // newly added for 3D
+    this.url = url;
+    this.is3D = is3D;
+    this.is3dSwitchable = is3dSwitchable
+    this.geometry = null;
+    this.map = null;
 }
 
 Costume.prototype.maxExtent = StageMorph.prototype.dimensions;
@@ -5855,11 +5855,11 @@ Costume.prototype.width = function () {
 };
 
 Costume.prototype.height = function () {
-	return this.contents.height;
+    return this.contents.height;
 };
 
 Costume.prototype.bounds = function () {
-	return new Rectangle(0, 0, this.width(), this.height());
+    return new Rectangle(0, 0, this.width(), this.height());
 };
 
 // Costume shrink-wrapping
@@ -6307,14 +6307,14 @@ Texture.uber = Costume.prototype;
 // Texture instance creation
 
 function Texture(name, url) {
-	this.name = name || null;
-	this.version = Date.now(); // for observer optimization
-	this.loaded = null; // for de-serialization only
-	this.url = url;
+    this.name = name || null;
+    this.version = Date.now(); // for observer optimization
+    this.loaded = null; // for de-serialization only
+    this.url = url;
 }
 
 Texture.prototype.toString = function () {
-	return 'a Texture(' + this.name + ')';
+    return 'a Texture(' + this.name + ')';
 };
 
 // Texture duplication
@@ -6322,7 +6322,7 @@ Texture.prototype.toString = function () {
 // Texture thumbnail
 Texture.prototype.thumbnail = function (extentPoint) {
     var trg = newCanvas(extentPoint);
-	return trg;
+    return trg;
 }
 
 // Sound /////////////////////////////////////////////////////////////

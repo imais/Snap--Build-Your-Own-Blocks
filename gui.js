@@ -1990,6 +1990,9 @@ IDE_Morph.prototype.duplicateSprite = function (sprite) {
 IDE_Morph.prototype.removeSprite = function (sprite) {
     var idx = this.sprites.asArray().indexOf(sprite) + 1;
 
+	if (sprite.costume && sprite.costume.is3D) {
+		sprite.destroy3dSprite();
+	}
     sprite.destroy();
     this.stage.watchers().forEach(function (watcher) {
         if (watcher.object() === sprite) {

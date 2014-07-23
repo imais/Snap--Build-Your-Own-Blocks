@@ -2879,6 +2879,8 @@ SpriteMorph.prototype.changeScale = function (delta) {
     this.setScale(this.getScale() + (+delta || 0));
 };
 
+// SpriteMorph misc 3D related functions
+
 SpriteMorph.prototype.toggle3D = function() {
 	if (this.costume == null || !this.costume.is3dSwitchable) {
 		// Native 3D objects cannot toggle between 3D and 2D
@@ -2932,6 +2934,15 @@ SpriteMorph.prototype.toggle3D = function() {
 		this.parent.changed();
 
 		this.costume.is3D = true;
+	}
+}
+
+SpriteMorph.prototype.destroy3dSprite = function() {
+	if (this instanceof SpriteMorph &&
+		this.costume && // check to see if the sprite is a Turtle
+		this.costume.is3D) {
+		this.parent.scene.remove(this.object);
+		this.parent.changed();
 	}
 }
 

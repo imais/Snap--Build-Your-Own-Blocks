@@ -432,11 +432,12 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: 'go back %n layers',
             defaults: [1]
         },
+        // camera control for the stage
         setCameraPosition: {
             type: 'command',
             category: 'looks',
             spec: 'set camera to x: %n y: %n z: %n',
-            defaults: [0, 0, 300]
+            defaults: [0, 50, 500]
         },
         changeCameraXPosition: {
             type: 'command',
@@ -602,6 +603,20 @@ SpriteMorph.prototype.initBlocks = function () {
             category: 'pen',
             spec: 'stamp'
         },
+        // 3D shapes
+        renderSphere: {
+            type: 'command',
+            category: 'pen',
+            spec: 'sphere radius: %n',
+            defaults: [50]
+        },
+        renderBox: {
+            type: 'command',
+            category: 'pen',
+            spec: 'box width: %n height: %n depth: %n',
+            defaults: [50, 50, 50]
+        },
+
 
         // Control
         receiveGo: {
@@ -1804,6 +1819,9 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push(block('setSize'));
         blocks.push('-');
         blocks.push(block('doStamp'));
+        blocks.push('-');
+        blocks.push(block('renderSphere'));
+        blocks.push(block('renderBox'));
 
     } else if (cat === 'control') {
 
@@ -2384,6 +2402,7 @@ SpriteMorph.prototype.wearCostume = function (costume) {
                 material = new THREE.MeshLambertMaterial({color: color});
             }
             mesh = new THREE.Mesh(costume.geometry, material);
+            comtume.geometry.computeBoundingSphere();
             sphere = costume.geometry.boundingSphere; // THREE.Sphere
             mesh.position.set(-sphere.center.x, -sphere.center.y, -sphere.center.z);
 
@@ -2808,7 +2827,66 @@ SpriteMorph.prototype.doStamp = function () {
 
 SpriteMorph.prototype.clear = function () {
     this.parent.clearPenTrails();
+
+    var stage = this.parent;
+    stage.objects.asArray().forEach(function (object) {
+        stage.scene.remove(object);
+    });
+    stage.changed();
 };
+
+
+// SpriteMorph 3D shape rendering
+SpriteMorph.prototype.render3dShape = function (geometry) {
+    var color = new THREE.Color(this.color.r/255, 
+                                this.color.g/255, 
+                                this.color.b/255),
+        material, mesh, sphere;
+
+    if (!this.costume || !this.costume.is3D) {
+        // assumed to be called from 3D objects
+        return;
+    }
+
+    if (this.costume.map) {
+        material = new THREE.MeshPhongMaterial({map: this.costume.map, color: color});
+    }
+    else {
+        material = new THREE.MeshLambertMaterial({color: color});
+    }
+    mesh = new THREE.Mesh(geometry, material);
+    geometry.computeBoundingSphere();
+    sphere = geometry.boundingSphere;
+    mesh.position.set(-sphere.center.x, -sphere.center.y, -sphere.center.z);
+    
+    object = new THREE.Object3D();
+    object.add(mesh);
+
+    // looks redundant, but this is to avoid pass by reference
+    object.position.x = this.object.position.x;
+    object.position.y = this.object.position.y;
+    object.position.z = this.object.position.z;
+    object.rotation.x = this.object.rotation.x;
+    object.rotation.y = this.object.rotation.y;
+    object.rotation.z = this.object.rotation.z;
+    object.scale.x = this.object.scale.x;
+    object.scale.y = this.object.scale.y;
+    object.scale.z = this.object.scale.z;
+
+    this.parent.scene.add(object);
+    this.parent.objects.add(object); // erase this object later by the 'clear' block
+    this.changed();
+}
+
+SpriteMorph.prototype.renderSphere = function (radius) {
+    this.render3dShape(new THREE.SphereGeometry(radius, 32, 32));
+}
+
+SpriteMorph.prototype.renderBox = function (width, height, depth) {
+    this.render3dShape(new THREE.BoxGeometry(width, height, depth));
+}
+
+
 
 // SpriteMorph pen size
 
@@ -3317,11 +3395,6 @@ SpriteMorph.prototype.setXPosition = function (num) {
 
 SpriteMorph.prototype.changeXPosition = function (delta) {
     this.setXPosition(this.xPosition() + (+delta || 0));
-
-    if (this.costume && this.costume.is3D) {
-        this.object.position.x += delta;
-        this.parent.changed();
-    }
 };
 
 SpriteMorph.prototype.setYPosition = function (num) {
@@ -3335,11 +3408,6 @@ SpriteMorph.prototype.setYPosition = function (num) {
 
 SpriteMorph.prototype.changeYPosition = function (delta) {
     this.setYPosition(this.yPosition() + (+delta || 0));
-
-    if (this.costume && this.costume.is3D) {
-        this.object.position.y += delta;
-        this.parent.changed();
-    }
 };
 
 SpriteMorph.prototype.setZPosition = function (num) {
@@ -4200,7 +4268,8 @@ StageMorph.prototype.init = function (globals) {
     this.fps = this.frameRate;
 
     // 3D
-    this.threedCanvas = null;
+    this.canvas3D = null;
+    this.objects = new List();
     this.init3D();
 };
 
@@ -4458,10 +4527,10 @@ StageMorph.prototype.init3D = function () {
 }
 
 StageMorph.prototype.get3dCanvas = function () {
-    if (!this.threedCanvas) {
-        this.threedCanvas = newCanvas(this.dimensions);
+    if (!this.canvas3D) {
+        this.canvas3D = newCanvas(this.dimensions);
     }
-    return this.threedCanvas;
+    return this.canvas3D;
 };
 
 StageMorph.prototype.getIsGridVisible = function () {

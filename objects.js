@@ -2378,7 +2378,7 @@ SpriteMorph.prototype.addCostume = function (costume) {
 
 SpriteMorph.prototype.wearCostume = function (costume) {
 
-    if (!this.colorChange && this.object && this.costume && costume != this.costume) {
+    if (this.colorChange || (this.object && this.costume && costume != this.costume)) {
         this.object.remove(this.mesh);
         this.parent.changed(); // redraw stage
     }

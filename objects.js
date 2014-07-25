@@ -3397,8 +3397,7 @@ SpriteMorph.prototype.gotoXY = function (x, y, justMe) {
 
 SpriteMorph.prototype.gotoXYZ = function (x, y, z, justMe) {
     if (this.costume && this.costume.is3D) {
-        this.setXPosition(x);
-        this.setYPosition(y);
+        this.gotoXY(x,y, justMe);
 
         this.object.position.x = x;
         this.object.position.y = y;

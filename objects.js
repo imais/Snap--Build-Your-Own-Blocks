@@ -622,6 +622,18 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: 'arc width: %n height: %n',
             defaults: [100, 100]
         },
+        renderCylinder: {
+            type: 'command',
+            category: 'pen',
+            spec: 'cylinder top: %n bottom: %n height: %n',
+            defaults: [50, 50, 100]
+        },
+        renderText: {
+            type: 'command',
+            category: 'pen',
+            spec: 'text %s size: %n height: %n',
+            defaults: [localize('Hello!'), 30, 3]
+        },
 
         // Control
         receiveGo: {
@@ -1839,6 +1851,8 @@ SpriteMorph.prototype.blockTemplates = function (category) {
             blocks.push(block('renderSphere'));
             blocks.push(block('renderBox'));
             blocks.push(block('renderArc'));
+            blocks.push(block('renderCylinder'));
+            blocks.push(block('renderText'));
         }
         else {
             blocks.push(block('clear'));
@@ -2422,16 +2436,16 @@ SpriteMorph.prototype.addCostume = function (costume) {
 
 SpriteMorph.prototype.wearCostume = function (costume) {
 
+    // check if we need to remove the existing 3D shape
     if (this.colorChange || (this.object && this.costume && costume != this.costume)) {
         this.object.remove(this.mesh);
         this.parent.changed(); // redraw stage
     }
 
-    // check if we need to update blocks
-    this.updatesPalette = ((this.costume == null) && costume.is3D)  || // Turtle -> 3D
-                               (this.costume.is3D && (costume == null)) || // 3D -> Turtle
-                               (this.costume.is3D != costume.is3D);        // 3D/2D -> 2D/3D
-
+    // check if we need to update the palatte
+    var isFrom2D = (this.costume == null) || (this.costume && !this.costume.is3D),
+        isTo2D = (costume == null) || (costume && !costume.is3D);
+    this.updatesPalette = (isFrom2D != isTo2D);
 
     if (costume && costume.is3D) { // if (costume == null), that means a Turtle
         if (costume.geometry != null) {
@@ -2976,6 +2990,19 @@ SpriteMorph.prototype.renderArc = function (width, height) {
                                       THREEJS_TUBE_RADIUS_SEGMENTS,
                                       false);   // closed or not
     this.render3dShape(geometry, false);
+}
+
+SpriteMorph.prototype.renderCylinder = function (top, bottom, height) {
+    const THREEJS_CYLINDER_RADIUS_SEGMENTS = 90;
+    this.render3dShape(new THREE.CylinderGeometry(top, bottom, height, 
+                                                  THREEJS_CYLINDER_RADIUS_SEGMENTS));
+}
+
+SpriteMorph.prototype.renderText = function (text, size, height) {
+    const THREEJS_TEXT_CURVE_SEGMENTS = 8;
+    this.render3dShape(new THREE.TextGeometry(text, {size: size, height: height,
+                                                     curveSegments: THREEJS_TEXT_CURVE_SEGMENTS,
+                                                     font:"helvetiker"}));
 }
 
 
@@ -4655,13 +4682,13 @@ StageMorph.prototype.toggleGrid = function () {
     yAxis.vertices.push(new THREE.Vector3(0,  size * 4/5, 0));
 
     var textX = new THREE.TextGeometry("X", 
-                                       {size:10, height:2, curveSegments:2, 
+                                       {size:10, height:2, curveSegments:8, 
                                         font:"helvetiker"}),
     textY = new THREE.TextGeometry("Y",
-                                   {size:10, height:2, curveSegments:2, 
+                                   {size:10, height:2, curveSegments:8, 
                                     font:"helvetiker"}),
     textZ = new THREE.TextGeometry("Z", 
-                                   {size:10, height:2, curveSegments:2,
+                                   {size:10, height:2, curveSegments:8,
                                     font:"helvetiker"});
     var textXMaterial = new THREE.MeshBasicMaterial({color: 0xaa0000, overdraw: true}),
     textYMaterial = new THREE.MeshBasicMaterial({color: 0x00aa00, overdraw: true}),

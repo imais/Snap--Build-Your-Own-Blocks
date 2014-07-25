@@ -616,7 +616,12 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: 'box width: %n height: %n depth: %n',
             defaults: [50, 50, 50]
         },
-
+        renderArc: {
+            type: 'command',
+            category: 'pen',
+            spec: 'arc width: %n height: %n',
+            defaults: [100, 100]
+        },
 
         // Control
         receiveGo: {
@@ -1822,6 +1827,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         blocks.push('-');
         blocks.push(block('renderSphere'));
         blocks.push(block('renderBox'));
+        blocks.push(block('renderArc'));
 
     } else if (cat === 'control') {
 
@@ -2837,11 +2843,12 @@ SpriteMorph.prototype.clear = function () {
 
 
 // SpriteMorph 3D shape rendering
-SpriteMorph.prototype.render3dShape = function (geometry) {
+SpriteMorph.prototype.render3dShape = function (geometry, centering) {
     var color = new THREE.Color(this.color.r/255, 
                                 this.color.g/255, 
                                 this.color.b/255),
-        material, mesh, sphere;
+        material, mesh, sphere,
+        centering = (centering == null) ? true : centering;
 
     if (!this.costume || !this.costume.is3D) {
         // assumed to be called from 3D objects
@@ -2855,10 +2862,12 @@ SpriteMorph.prototype.render3dShape = function (geometry) {
         material = new THREE.MeshLambertMaterial({color: color});
     }
     mesh = new THREE.Mesh(geometry, material);
-    geometry.computeBoundingSphere();
-    sphere = geometry.boundingSphere;
-    mesh.position.set(-sphere.center.x, -sphere.center.y, -sphere.center.z);
-    
+    if (centering) {
+        geometry.computeBoundingSphere();
+        sphere = geometry.boundingSphere;
+        mesh.position.set(-sphere.center.x, -sphere.center.y, -sphere.center.z);
+    }
+        
     object = new THREE.Object3D();
     object.add(mesh);
 
@@ -2875,7 +2884,7 @@ SpriteMorph.prototype.render3dShape = function (geometry) {
 
     this.parent.scene.add(object);
     this.parent.objects.add(object); // erase this object later by the 'clear' block
-    this.changed();
+    this.parent.changed();
 }
 
 SpriteMorph.prototype.renderSphere = function (radius) {
@@ -2884,6 +2893,28 @@ SpriteMorph.prototype.renderSphere = function (radius) {
 
 SpriteMorph.prototype.renderBox = function (width, height, depth) {
     this.render3dShape(new THREE.BoxGeometry(width, height, depth));
+}
+
+SpriteMorph.prototype.renderArc = function (width, height) {
+    const THREEJS_ARC_SEGMENTS = 60,
+        THREEJS_TUBE_SEGMENTS = THREEJS_ARC_SEGMENTS,
+        THREEJS_TUBE_RADIUS = 4;
+        THREEJS_TUBE_RADIUS_SEGMENTS = 4;
+    var xRadius = width/2, yRadius = height, x, y, points = new Array(), 
+        path, geometry;
+
+    for (var theta = 0; theta <= Math.PI; theta += (Math.PI/THREEJS_ARC_SEGMENTS)) {
+        x = xRadius * Math.cos(theta);
+        y = yRadius * Math.sin(theta);
+        points.push(new THREE.Vector3(x, y, 0));
+    }
+    path = new THREE.SplineCurve3(points);
+    geometry = new THREE.TubeGeometry(path, 
+                                      THREEJS_TUBE_SEGMENTS,
+                                      THREEJS_TUBE_RADIUS,
+                                      THREEJS_TUBE_RADIUS_SEGMENTS,
+                                      false);   // closed or not
+    this.render3dShape(geometry, false);
 }
 
 

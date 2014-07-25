@@ -3415,29 +3415,24 @@ SpriteMorph.prototype.silentGotoXY = function (x, y, justMe) {
 };
 
 SpriteMorph.prototype.setXPosition = function (num) {
-    this.gotoXY(+num || 0, this.yPosition());
-
-    if (this.costume && this.costume.is3D) {
-        this.object.position.x = num;
-        this.parent.changed();
-    }
+    this.gotoXYZ(+num || 0, this.yPosition(), this.zPosition());
 };
 
 SpriteMorph.prototype.changeXPosition = function (delta) {
-    this.setXPosition(this.xPosition() + (+delta || 0));
+    this.gotoXYZ(this.xPosition() + (+delta || 0), 
+                 this.yPosition(),
+                 this.zPosition());
 };
 
 SpriteMorph.prototype.setYPosition = function (num) {
-    this.gotoXY(this.yPosition(), +num || 0);
-
-    if (this.costume && this.costume.is3D) {
-        this.object.position.y = num;
-        this.parent.changed();
-    }
+    this.gotoXYZ(this.xPosition(), +num || 0, this.zPosition());
 };
 
 SpriteMorph.prototype.changeYPosition = function (delta) {
-    this.setYPosition(this.yPosition() + (+delta || 0));
+    this.gotoXYZ(this.xPosition(),
+                 this.yPosition() + (+delta || 0),
+                 this.zPosition());
+
 };
 
 SpriteMorph.prototype.setZPosition = function (num) {

@@ -1097,7 +1097,7 @@ IDE_Morph.prototype.createSpriteBar = function () {
             },
             'display grid', // TODO: localize
             function () {
-                return myself.currentSprite.getIsGridVisible();
+                return myself.currentSprite.getGridVisible();
             }
         );
     }
@@ -2414,7 +2414,9 @@ IDE_Morph.prototype.settingsMenu = function () {
             StageMorph.prototype.enableCodeMapping =
                 !StageMorph.prototype.enableCodeMapping;
             myself.currentSprite.blocksCache.variables = null;
+            myself.currentSprite.blocksCache3D.variables = null;
             myself.currentSprite.paletteCache.variables = null;
+            myself.currentSprite.paletteCache3D.variables = null;
             myself.refreshPalette();
         },
         StageMorph.prototype.enableCodeMapping,
@@ -3349,6 +3351,7 @@ IDE_Morph.prototype.flushBlocksCache = function (category) {
         this.stage.children.forEach(function (m) {
             if (m instanceof SpriteMorph) {
                 m.blocksCache[category] = null;
+                m.blocksCache3D[category] = null;
             }
         });
     } else {
@@ -3356,6 +3359,7 @@ IDE_Morph.prototype.flushBlocksCache = function (category) {
         this.stage.children.forEach(function (m) {
             if (m instanceof SpriteMorph) {
                 m.blocksCache = {};
+                m.blocksCache3D = {};
             }
         });
     }
@@ -3369,6 +3373,7 @@ IDE_Morph.prototype.flushPaletteCache = function (category) {
         this.stage.children.forEach(function (m) {
             if (m instanceof SpriteMorph) {
                 m.paletteCache[category] = null;
+                m.paletteCache3D[category] = null;
             }
         });
     } else {
@@ -3376,6 +3381,7 @@ IDE_Morph.prototype.flushPaletteCache = function (category) {
         this.stage.children.forEach(function (m) {
             if (m instanceof SpriteMorph) {
                 m.paletteCache = {};
+                m.paletteCache3D = {};
             }
         });
     }

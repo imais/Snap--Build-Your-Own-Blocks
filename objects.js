@@ -1528,11 +1528,6 @@ SpriteMorph.prototype.drawNew = function () {
     
     this.originalPixels = this.image.getContext('2d').createImageData(this.width(), this.height());
     this.originalPixels = this.image.getContext('2d').getImageData(0, 0, this.width(), this.height());
-    
-    //Check if color change has been applied earlier in script
-    if(this.colorChange){
-        this.changeCostumeColor(this.costumeColor);
-    }
 };
 
 SpriteMorph.prototype.endWarp = function () {
@@ -2383,7 +2378,7 @@ SpriteMorph.prototype.addCostume = function (costume) {
 
 SpriteMorph.prototype.wearCostume = function (costume) {
 
-    if (this.object && this.costume && costume != this.costume) {
+    if (!this.colorChange && this.object && this.costume && costume != this.costume) {
         this.object.remove(this.mesh);
         this.parent.changed(); // redraw stage
     }
@@ -2408,7 +2403,7 @@ SpriteMorph.prototype.wearCostume = function (costume) {
                 material = new THREE.MeshLambertMaterial({color: color});
             }
             mesh = new THREE.Mesh(costume.geometry, material);
-            comtume.geometry.computeBoundingSphere();
+            costume.geometry.computeBoundingSphere();
             sphere = costume.geometry.boundingSphere; // THREE.Sphere
             mesh.position.set(-sphere.center.x, -sphere.center.y, -sphere.center.z);
 
@@ -2712,9 +2707,18 @@ SpriteMorph.prototype.setColor = function (aColor) {
     var x = this.xPosition(),
         y = this.yPosition();
     if (!this.color.eq(aColor)) {
+        this.colorChange = true;
+
         this.color = aColor;
         this.drawNew();
         this.gotoXY(x, y);
+        
+        if (this.costume && this.costume.is3D) {
+            // wear the same costume with a different color
+            this.wearCostume(this.costume);
+        }
+
+        this.colorChange = false;
     }
 };
 

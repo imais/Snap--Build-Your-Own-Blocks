@@ -3132,6 +3132,12 @@ SpriteMorph.prototype.toggle3D = function() {
 
         this.costume.is3D = true;
     }
+
+    var ide = this.parentThatIsA(IDE_Morph);
+    if (ide) {
+        // do this to update the palette
+        ide.selectSprite(this);
+    }
 }
 
 SpriteMorph.prototype.destroy3dSprite = function() {

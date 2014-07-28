@@ -567,6 +567,16 @@ SpriteMorph.prototype.initBlocks = function () {
             category: 'pen',
             spec: 'pen up'
         },
+        show3dPen: {
+            type: 'command',
+            category: 'pen',
+            spec: 'show pen'
+        },
+        hide3dPen: {
+            type: 'command',
+            category: 'pen',
+            spec: 'hide pen'
+        },
         setColor: {
             type: 'command',
             category: 'pen',
@@ -637,6 +647,12 @@ SpriteMorph.prototype.initBlocks = function () {
             category: 'pen',
             spec: 'cylinder top: %n bottom: %n height: %n',
             defaults: [50, 50, 100]
+        },
+        renderTorusKnot: {
+            type: 'command',
+            category: 'pen',
+            spec: 'knot radius: %n tube: %n p: %n q: %n scale: %n',
+            defaults: [5, 5, 2, 3, 5]
         },
         renderText: {
             type: 'command',
@@ -1377,6 +1393,7 @@ SpriteMorph.prototype.init = function (globals) {
 
     this.isDraggable = true;
     this.isDown = false;
+    this.is3dPenVisible = true;  // controlled by show3dPen()/hide3dPen()
 
     this.heading = 90;
     this.changed();
@@ -1854,6 +1871,9 @@ SpriteMorph.prototype.blockTemplates = function (category) {
         if (this.costume && this.costume.is3D) {
             blocks.push(block('clear'));
             blocks.push('-');
+            blocks.push(block('show3dPen'));
+            blocks.push(block('hide3dPen'));
+            blocks.push('-');
             blocks.push(block('setColor'));
             blocks.push(block('changeHue'));
             blocks.push(block('setHue'));
@@ -1865,6 +1885,7 @@ SpriteMorph.prototype.blockTemplates = function (category) {
             blocks.push(block('renderBox'));
             blocks.push(block('renderArc'));
             blocks.push(block('renderCylinder'));
+            blocks.push(block('renderTorusKnot'));
             blocks.push(block('renderText'));
         }
         else {
@@ -2923,11 +2944,36 @@ SpriteMorph.prototype.clear = function () {
     this.parent.clearPenTrails();
 
     var stage = this.parent;
-    stage.objects.asArray().forEach(function (object) {
+    stage.shownObjects.asArray().forEach(function (object) {
         stage.scene.remove(object);
     });
+    stage.shownObjects.clear();
+    stage.hiddenObjects.clear();
     stage.changed();
+    this.is3dPenVisible = true;
 };
+
+SpriteMorph.prototype.show3dPen = function () {
+    if (!this.is3dPenVisible) {
+        var stage = this.parent;
+        if (0 < stage.hiddenObjects.length()) {
+            stage.hiddenObjects.asArray().forEach(function (object) {
+                stage.scene.add(object);
+                stage.shownObjects.add(object);
+            });
+        }
+
+        stage.hiddenObjects.clear();
+        stage.changed();
+        this.is3dPenVisible = true;        
+    }
+}
+
+SpriteMorph.prototype.hide3dPen = function () {
+    if (this.is3dPenVisible) {
+        this.is3dPenVisible = false;
+    }
+}
 
 
 // SpriteMorph 3D shape rendering
@@ -2970,9 +3016,14 @@ SpriteMorph.prototype.render3dShape = function (geometry, centering) {
     object.scale.y = this.object.scale.y;
     object.scale.z = this.object.scale.z;
 
-    this.parent.scene.add(object);
-    this.parent.objects.add(object); // erase this object later by the 'clear' block
-    this.parent.changed();
+    if (this.is3dPenVisible) {
+        this.parent.shownObjects.add(object); // erase this object later by the 'clear' block
+        this.parent.scene.add(object);
+        this.parent.changed();
+    }
+    else {
+        this.parent.hiddenObjects.add(object);
+    }
 }
 
 SpriteMorph.prototype.renderSphere = function (radius) {
@@ -3011,13 +3062,21 @@ SpriteMorph.prototype.renderCylinder = function (top, bottom, height) {
                                                   THREEJS_CYLINDER_RADIUS_SEGMENTS));
 }
 
+SpriteMorph.prototype.renderTorusKnot = function (radius, tube, p, q, heightScale) {
+    const THREEJS_TORUS_KNOT_RADIAL_SEGMENTS = 50,
+        THREEJS_TORUS_KNOT_TUBULAR_SEGMENTS = 10;
+    this.render3dShape(new THREE.TorusKnotGeometry(radius, tube, 
+                                                   THREEJS_TORUS_KNOT_RADIAL_SEGMENTS,
+                                                   THREEJS_TORUS_KNOT_TUBULAR_SEGMENTS,
+                                                   p, q, heightScale));
+}
+
 SpriteMorph.prototype.renderText = function (text, size, height) {
     const THREEJS_TEXT_CURVE_SEGMENTS = 8;
     this.render3dShape(new THREE.TextGeometry(text, {size: size, height: height,
                                                      curveSegments: THREEJS_TEXT_CURVE_SEGMENTS,
                                                      font:"helvetiker"}));
 }
-
 
 
 // SpriteMorph pen size
@@ -3115,7 +3174,7 @@ SpriteMorph.prototype.toggle3D = function() {
                 this.costume.map = THREE.ImageUtils.loadTexture(this.costume.url);
             }
             else {
-                // Painted costumes
+                // User-painted costumes
                 this.costume.map = new THREE.Texture(this.costume.contents);
             }
             width = this.costume.contents.width;
@@ -4415,7 +4474,8 @@ StageMorph.prototype.init = function (globals) {
 
     // 3D
     this.canvas3D = null;
-    this.objects = new List();
+    this.shownObjects = new List();
+    this.hiddenObjects = new List();
     this.init3D();
 };
 

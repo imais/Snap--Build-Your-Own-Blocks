@@ -88,7 +88,7 @@ VariableFrame, detect, threadsVersion*/
 
 /*global ArgMorph, ArrowMorph, BlockHighlightMorph, BlockMorph,
 BooleanSlotMorph, BoxMorph, Color, ColorPaletteMorph, ColorSlotMorph,
-CommandBlockMorph, CommandSlotMorph, FrameMorph, HatBlockMorph,
+vCommandBlockMorph, CommandSlotMorph, FrameMorph, HatBlockMorph,
 InputSlotMorph, MenuMorph, Morph, MultiArgMorph, Point,
 ReporterBlockMorph, ScriptsMorph, ShaAwMorph, StringMorph,
 SyntaxElementMorph, TextMorph, WorldMorph, blocksVersion, contains,
@@ -417,6 +417,16 @@ SpriteMorph.prototype.initBlocks = function () {
             spec: 'show'
         },
         hide: {
+            type: 'command',
+            category: 'looks',
+            spec: 'hide'
+        },
+        show3D: {
+            type: 'command',
+            category: 'looks',
+            spec: 'show'
+        },
+        hide3D: {
             type: 'command',
             category: 'looks',
             spec: 'hide'
@@ -1761,6 +1771,9 @@ SpriteMorph.prototype.blockTemplates = function (category) {
             blocks.push(block('getCostumeIdx'));
             blocks.push('-');
             blocks.push(block('setScale3D'));
+            blocks.push('-');
+            blocks.push(block('show3D'));
+            blocks.push(block('hide3D'));
         }
         else {
             blocks.push(block('doSwitchToCostume'));
@@ -3145,6 +3158,20 @@ SpriteMorph.prototype.destroy3dSprite = function() {
         this.costume && // check to see if the sprite is a Turtle
         this.costume.is3D) {
         this.parent.scene.remove(this.object);
+        this.parent.changed();
+    }
+}
+
+SpriteMorph.prototype.hide3D = function() {
+    if (this.object.visible) {
+        this.object.visible = false;
+        this.parent.changed();
+    }
+}
+
+SpriteMorph.prototype.show3D = function() {
+    if (!this.object.visible) {
+        this.object.visible = true;
         this.parent.changed();
     }
 }

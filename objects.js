@@ -3063,7 +3063,7 @@ SpriteMorph.prototype.renderCylinder = function (top, bottom, height) {
 }
 
 SpriteMorph.prototype.renderTorusKnot = function (radius, tube, p, q, heightScale) {
-    const THREEJS_TORUS_KNOT_RADIAL_SEGMENTS = 50,
+    const THREEJS_TORUS_KNOT_RADIAL_SEGMENTS = 24,
         THREEJS_TORUS_KNOT_TUBULAR_SEGMENTS = 10;
     this.render3dShape(new THREE.TorusKnotGeometry(radius, tube, 
                                                    THREEJS_TORUS_KNOT_RADIAL_SEGMENTS,
@@ -4728,7 +4728,11 @@ StageMorph.prototype.init3D = function () {
     this.scene.add(this.light);
 
     // renderer
+    // try {
+    //     this.renderer = new THREE.WebGLRenderer({canvas: canvas});
+    // } catch (e) {
     this.renderer = new THREE.CanvasRenderer({canvas: canvas});
+    // }
     this.renderer.setSize(canvas.width, canvas.height);
 }
 

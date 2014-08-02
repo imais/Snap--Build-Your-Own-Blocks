@@ -1659,8 +1659,6 @@ IDE_Morph.prototype.dropped3dObject = function (name, url) {
 };
 
 IDE_Morph.prototype.droppedTexture = function (name, url) {
-    console.log('droppedTexture: ' + name + ', ' + url);
-
     var texture = new Texture(
         name ? name.split('.')[0] : '', // up to period
         url

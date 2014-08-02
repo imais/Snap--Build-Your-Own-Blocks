@@ -2511,7 +2511,7 @@ SpriteMorph.prototype.wearCostume = function (costume) {
             this.parent.changed(); // redraw stage
         }
         else {
-            // first time we read this geometry
+            // first time we load this geometry
             var loader = new THREE.JSONLoader(), myself = this;
             loader.load(costume.url, function(geometry) {
                 var color = new THREE.Color(myself.color.r/255, 
@@ -2534,8 +2534,6 @@ SpriteMorph.prototype.wearCostume = function (costume) {
                 myself.parent.changed(); // redraw stage
 
                 costume.geometry = geometry;
-                
-                // console.log("[" + Date.now() + "] 3D costume finished loading!" );
             });
         }
         this.costume = costume;
@@ -2566,7 +2564,7 @@ SpriteMorph.prototype.wearCostume = function (costume) {
     if (this.updatesPalette) {
         var ide = this.parentThatIsA(IDE_Morph);
         if (ide) {
-            ide.selectSprite(this); // TODO: there may be a better way to update palettes/blocks...
+            ide.selectSprite(this);
         }
     }
 };
@@ -2646,13 +2644,6 @@ SpriteMorph.prototype.reportCostumes = function () {
 };
 
 // SpriteMorph texture management
-
-// SpriteMorph.prototype.addTexture = function (texture) {
-//     if (!texture.name) {
-//         texture.name = 'texture' + (this.textures.length() + 1);
-//     }
-//  this.textures.add(texture);
-// };
 
 SpriteMorph.prototype.wearTexture = function (texture) {
     if (this.costume && this.costume.is3D) {
@@ -4540,10 +4531,6 @@ StageMorph.prototype.drawNew = function () {
 };
 
 StageMorph.prototype.drawOn = function (aCanvas, aRect) {
-    // console.time('StageMorph.drawOn');
-    // console.profile('StageMorph.drawOn');
-
-    // make sure to draw the 3D objects and pen trails canvases as well
     var rectangle, area, delta, src, context, w, h, sl, st, ws, hs;
     if (!this.isVisible) {
         return null;
@@ -4564,7 +4551,7 @@ StageMorph.prototype.drawOn = function (aCanvas, aRect) {
         if (w < 1 || h < 1) {
             return null;
         }
-        // console.time('StageMorph drawImage - image');
+
         context.drawImage(
             this.image,
             src.left(),
@@ -4576,19 +4563,16 @@ StageMorph.prototype.drawOn = function (aCanvas, aRect) {
             w,
             h
         );
-        // console.timeEnd('StageMorph drawImage - image');
 
         ws = w / this.scale;
         hs = h / this.scale;
         context.save();
         context.scale(this.scale, this.scale);
         // 3d
-        // console.log("[" + Date.now() + "] StageMorph.drawOn()" );
         // console.time('StageMorph renderer');
         this.renderer.render(this.scene, this.camera);
         // console.timeEnd('StageMorph renderer');
 
-        // console.time('StageMorph drawImage - 3D');
         context.drawImage(
             this.get3dCanvas(),
             src.left() / this.scale,
@@ -4600,10 +4584,8 @@ StageMorph.prototype.drawOn = function (aCanvas, aRect) {
             ws,
             hs
         );
-        // console.timeEnd('StageMorph drawImage - 3D');
 
         // pen trails
-        // console.time('StageMorph drawImage - pen');
         context.drawImage(
             this.penTrails(),
             src.left() / this.scale,
@@ -4616,10 +4598,7 @@ StageMorph.prototype.drawOn = function (aCanvas, aRect) {
             hs
         );
         context.restore();
-        // console.timeEnd('StageMorph drawImage - pen');
     }
-
-    // console.timeEnd('StageMorph.drawOn');
 };
 
 StageMorph.prototype.clearPenTrails = function () {
@@ -4700,14 +4679,10 @@ const THREEJS_CAMERA_DEFAULT_Z_POSITION = 500;
 StageMorph.prototype.init3D = function () {
     var canvas = this.get3dCanvas();
 
-    // var vFOV = 2 * Math.atan(canvas.height / (2 * THREEJS_CAMERA_Z_POSITION));
     var vFOV = THREEJS_FIELD_OF_VIEW;
-    // var dist = canvas.height / (2 * Math.tan(radians(vFOV) / 2));
     var dist = THREEJS_CAMERA_DEFAULT_Z_POSITION;
-    console.log("vFOV=" + vFOV + ", dist=" + dist);
     var height = 2 * Math.tan(radians(vFOV / 2)) * dist;
     var width = (canvas.width / canvas.height) * height;
-    console.log( "width=" + width + ", height=" + height);
 
     this.scene = new THREE.Scene();
 
@@ -5727,7 +5702,6 @@ StageMorph.prototype.clearEffects
     = SpriteMorph.prototype.clearEffects;
 
 StageMorph.prototype.setCameraPosition = function(x, y, z) {
-    // TODO: check if there is at least one 3D object
     this.camera.position.x = x;
     this.camera.position.y = y;
     this.camera.position.z = z;
@@ -5754,6 +5728,7 @@ StageMorph.prototype.changeCameraZPosition = function(delta) {
 }
 
 StageMorph.prototype.turnCameraAroundXAxis = function(deg) {
+    // This function does not work properly
     var y = this.camera.position.y, z = this.camera.position.z,
         radius = Math.sqrt(Math.pow(y, 2) + Math.pow(z, 2)),
         theta = Math.acos(z / radius);
@@ -5764,11 +5739,6 @@ StageMorph.prototype.turnCameraAroundXAxis = function(deg) {
     this.camera.position.y = radius * Math.sin(theta + radians(deg)) * (-1);
     this.camera.position.z = radius * Math.cos(theta + radians(deg));
     this.camera.lookAt({x:0, y:0, z:0});
-    console.log("camera.position={" + 
-                this.camera.position.x + ", " + 
-                this.camera.position.y + ", " + 
-                this.camera.position.z + "}, theta=" + 
-                degrees(theta));
     this.changed();
 }
 
@@ -5783,11 +5753,6 @@ StageMorph.prototype.turnCameraAroundYAxis = function(deg) {
     this.camera.position.x = radius * Math.sin(theta + radians(deg));
     this.camera.position.z = radius * Math.cos(theta + radians(deg));
     this.camera.lookAt({x:0, y:0, z:0});
-    console.log("camera.position={" + 
-                this.camera.position.x + ", " + 
-                this.camera.position.y + ", " + 
-                this.camera.position.z + "}, theta=" + 
-                degrees(theta));
     this.changed();
 }
 

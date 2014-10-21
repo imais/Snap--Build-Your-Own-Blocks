@@ -2752,7 +2752,7 @@ IDE_Morph.prototype.getCostumesList = function (dirname) {
     dir = this.getURL(dirname);
     dir.split('\n').forEach(
         function (line) {
-            var startIdx = line.search(new RegExp('href="[^./?].*"')),
+            var startIdx = line.search(new RegExp('href="[^./?].*"', 'i')),
                 endIdx,
                 name;
 

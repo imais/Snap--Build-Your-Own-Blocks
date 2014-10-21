@@ -4703,11 +4703,11 @@ StageMorph.prototype.init3D = function () {
     this.scene.add(this.light);
 
     // renderer
-    try {
-        this.renderer = new THREE.WebGLRenderer({canvas: canvas});
-    } catch (e) {
+    // try {
+    //     this.renderer = new THREE.WebGLRenderer({canvas: canvas});
+    // } catch (e) {
         this.renderer = new THREE.CanvasRenderer({canvas: canvas});
-    }
+    // }
     this.renderer.setSize(canvas.width, canvas.height);
 }
 
